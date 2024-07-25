@@ -10,9 +10,24 @@ spring:
   mvc:
     servlet:
       load-on-startup: 1
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
   servlet:
     multipart:
       max-file-size: 3072MB
       max-request-size: 3072MB
+
 server:
   port: 8080
+swagger2:
+  show: true
+  group-name: ${spring.application.name}
+  base-package: com.xiaoxin.pan
+  title: x-pan-server docs
+  description: x-pan-server docs
+  terms-of-service-url: http://127.0.0.1:${server.port}
+  contact-name: xiaoxin
+  contact-url: https://my.oschina.net/u/4911024
+  contact-email: 2014402458@qq.com
+  version: 1.0
