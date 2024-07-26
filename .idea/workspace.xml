@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="8248fa28-ce15-47ff-b073-e6537b90baba" name="Changes" comment="添加sql文件">
+      <change beforePath="$PROJECT_DIR$/server/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/server/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main/resources/application.yaml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="customMavenHome" value="F:\shoftware\Dev\apache-maven-3.9.1" />
+        <option name="localRepository" value="F:\LearningMaterials\UtilorJAR\mvnrepository" />
+        <option name="mavenHomeTypeForPersistence" value="CUSTOM" />
+        <option name="userSettingsFile" value="F:\shoftware\Dev\apache-maven-3.9.1\conf\settings.xml" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 1
+}</component>
+  <component name="ProjectId" id="2jhQ2VEPW4nqX94EjlcWCC202MV" />
+  <component name="ProjectViewState">
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven.x-pan [clean].executor": "Run",
+    "Maven.x-pan [compile].executor": "Run",
+    "Maven.x-pan [install].executor": "Run",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "Spring Boot.XPanServerLauncher.executor": "Debug",
+    "git-widget-placeholder": "master",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "F:/code/x-pan/server/src/main/java/com/xiaoxin/pan/server/modules/file",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Problems",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.30229884",
+    "settings.editor.selected.configurable": "MavenSettings",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="F:\code\x-pan\server\src\main\java\com\xiaoxin\pan\server\modules\file" />
+      <recent name="F:\code\x-pan\server\src\main\java\com\xiaoxin\pan\server" />
+      <recent name="F:\code\x-pan\server\src\main\java\com\xiaoxin\pan\server\common\entity" />
+      <recent name="F:\code\x-pan\sql" />
+      <recent name="F:\code\x-pan\framework\web\src\main\java\com\xiaoxin\pan" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="F:\code\x-pan\server\src\main\resources" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="com.xiaoxin.pan.server.modules.file.mapper" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="XPanServerLauncher" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.xiaoxin.pan.server.XPanServerLauncher" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9f38398b9061-18abd8497189-intellij.indexing.shared.core-IU-241.14494.240" />
+        <option value="bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-IU-241.14494.240" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8248fa28-ce15-47ff-b073-e6537b90baba" name="Changes" comment="" />
+      <created>1721836623355</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1721836623355</updated>
+      <workItem from="1721836624178" duration="366000" />
+      <workItem from="1721884685619" duration="1084000" />
+      <workItem from="1721886030091" duration="7393000" />
+      <workItem from="1721893450238" duration="39000" />
+      <workItem from="1721909324323" duration="963000" />
+      <workItem from="1721911374888" duration="53000" />
+      <workItem from="1721912468631" duration="788000" />
+      <workItem from="1721964522606" duration="4880000" />
+    </task>
+    <task id="LOCAL-00001" summary="初始化项目并测试运行">
+      <option name="closed" value="true" />
+      <created>1721889416295</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1721889416295</updated>
+    </task>
+    <task id="LOCAL-00002" summary="集成swagger2并测试">
+      <option name="closed" value="true" />
+      <created>1721892955910</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1721892955910</updated>
+    </task>
+    <task id="LOCAL-00003" summary="配置参数校验，统一异常处理">
+      <option name="closed" value="true" />
+      <created>1721967693675</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1721967693675</updated>
+    </task>
+    <task id="LOCAL-00004" summary="添加sql文件">
+      <option name="closed" value="true" />
+      <created>1721967860620</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1721967860620</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="初始化项目并测试运行" />
+    <MESSAGE value="集成swagger2并测试" />
+    <MESSAGE value="配置参数校验，统一异常处理" />
+    <MESSAGE value="添加sql文件" />
+    <option name="LAST_COMMIT_MESSAGE" value="添加sql文件" />
+  </component>
+</project>
