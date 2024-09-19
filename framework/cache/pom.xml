@@ -5,16 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.xiaoxin</groupId>
-        <artifactId>x-pan</artifactId>
+        <artifactId>framework</artifactId>
         <version>1.0</version>
     </parent>
 
-    <artifactId>framework</artifactId>
+    <artifactId>cache</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>web</module>
-        <module>swagger2</module>
-        <module>cache</module>
+        <module>cache-code</module>
     </modules>
 
     <properties>
