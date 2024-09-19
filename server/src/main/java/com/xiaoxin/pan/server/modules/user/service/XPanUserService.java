@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.user.service;
 
+import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -10,4 +11,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface XPanUserService extends IService<XPanUser> {
 
+    Long register(UserRegisterContext userRegisterContext);
 }
