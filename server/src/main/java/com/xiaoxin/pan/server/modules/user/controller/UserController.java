@@ -2,6 +2,7 @@ package com.xiaoxin.pan.server.modules.user.controller;
 
 import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
+import com.xiaoxin.pan.server.common.annotation.LoginIgnore;
 import com.xiaoxin.pan.server.modules.user.context.UserLoginContext;
 import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
 import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
@@ -38,6 +39,7 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     @PostMapping("register")
+    @LoginIgnore
     public R register(@Validated @RequestBody UserRegisterPO userRegisterPO) {
         UserRegisterContext userRegisterContext = userConverter.userRegisterPO2UserRegisterContext(userRegisterPO);
         Long userId = userService.register(userRegisterContext);
@@ -54,6 +56,7 @@ public class UserController {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     @PostMapping("login")
+    @LoginIgnore
     public R login(@RequestBody UserLoginPO userLoginPO) {
         UserLoginContext userLoginContext = userConverter.userLoginPO2UserLoginContext(userLoginPO);
         String accessToken = userService.login(userLoginContext);
@@ -72,7 +75,7 @@ public class UserController {
     @PostMapping("exit")
     public R exit() {
         userService.exit(IdUtil.get());
-        return R.success();
+        return R.success("退出登录成功！");
     }
 
 }
