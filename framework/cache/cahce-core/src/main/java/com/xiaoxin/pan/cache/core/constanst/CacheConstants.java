@@ -1,4 +1,4 @@
-package com.xiaoxin.pan.core.constanst;
+package com.xiaoxin.pan.cache.core.constanst;
 
 /**
  * X Pan 服务端公用缓存常量类

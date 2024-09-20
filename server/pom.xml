@@ -28,6 +28,11 @@
             <artifactId>swagger2</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.xiaoxin</groupId>
+            <artifactId>cache-redis</artifactId>
+            <version>1.0</version>
+        </dependency>
         <!--mysql-connector-java-->
         <dependency>
             <groupId>mysql</groupId>

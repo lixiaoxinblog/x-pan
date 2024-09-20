@@ -1,7 +1,7 @@
-package com.xiaoxin.pan.caffeine.config;
+package com.xiaoxin.pan.cache.caffeine.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.xiaoxin.pan.core.constanst.CacheConstants;
+import com.xiaoxin.pan.cache.core.constanst.CacheConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;

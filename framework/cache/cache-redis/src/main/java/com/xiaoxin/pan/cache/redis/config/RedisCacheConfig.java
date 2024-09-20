@@ -42,6 +42,7 @@ public class RedisCacheConfig {
         redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
         redisTemplate.setHashKeySerializer(stringRedisSerializer);
         redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer);
+        log.info("the redis redisTemplate is loaded successfully!");
         return redisTemplate;
     }
     /**

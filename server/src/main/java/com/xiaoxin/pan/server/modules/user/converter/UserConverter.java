@@ -1,8 +1,10 @@
 package com.xiaoxin.pan.server.modules.user.converter;
 
+import com.xiaoxin.pan.server.modules.user.context.UserLoginContext;
 import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.xiaoxin.pan.server.modules.user.po.UserRegisterPO;
+import com.xiaoxin.pan.server.modules.user.po.UserLoginPO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -28,4 +30,13 @@ public interface UserConverter {
      */
     @Mapping(target = "password", ignore = true)
     XPanUser userRegisterContext2RPanUser(UserRegisterContext userRegisterContext);
+
+    /**
+     * UserLoginPO转UserLoginContext
+     *
+     * @param userLoginPO
+     * @return
+     */
+    UserLoginContext userLoginPO2UserLoginContext(UserLoginPO userLoginPO);
+
 }

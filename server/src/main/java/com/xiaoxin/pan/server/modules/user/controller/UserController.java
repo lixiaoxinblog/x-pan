@@ -2,8 +2,10 @@ package com.xiaoxin.pan.server.modules.user.controller;
 
 import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
+import com.xiaoxin.pan.server.modules.user.context.UserLoginContext;
 import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
 import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
+import com.xiaoxin.pan.server.modules.user.po.UserLoginPO;
 import com.xiaoxin.pan.server.modules.user.po.UserRegisterPO;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
 import io.swagger.annotations.Api;
@@ -40,6 +42,37 @@ public class UserController {
         UserRegisterContext userRegisterContext = userConverter.userRegisterPO2UserRegisterContext(userRegisterPO);
         Long userId = userService.register(userRegisterContext);
         return R.success(IdUtil.encrypt(userId));
+    }
+
+    /**
+     * 用户登陆接口，登陆成功后返回有效时间的access token
+     */
+    @ApiOperation(
+            value = "用户登陆接口",
+            notes = "该接口提供了用户登陆的功能，登陆成功后返回有效时间的access token",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("login")
+    public R login(@RequestBody UserLoginPO userLoginPO) {
+        UserLoginContext userLoginContext = userConverter.userLoginPO2UserLoginContext(userLoginPO);
+        String accessToken = userService.login(userLoginContext);
+        return R.data(accessToken);
+    }
+
+    /**
+     * 用户登出
+     */
+    @ApiOperation(
+            value = "用户登出接口",
+            notes = "该接口提供了用户登出的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("exit")
+    public R exit() {
+        userService.exit(IdUtil.get());
+        return R.success();
     }
 
 }

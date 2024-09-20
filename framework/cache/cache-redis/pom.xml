@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>com.xiaoxin</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>cahce-core</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>

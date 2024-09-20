@@ -1,4 +1,4 @@
-package com.xiaoxin.pan.caffeine.config;
+package com.xiaoxin.pan.cache.caffeine.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
