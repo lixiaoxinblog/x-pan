@@ -2,6 +2,7 @@ package com.xiaoxin.pan.server.modules.share.mapper;
 
 import com.xiaoxin.pan.server.modules.share.entity.XPanShare;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
 * @author xiaoxin
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2024-07-26 12:50:31
 * @Entity com.xiaoxin.pan.server.modules.share.entity.XPanShare
 */
+@Mapper
 public interface XPanShareMapper extends BaseMapper<XPanShare> {
 
 }

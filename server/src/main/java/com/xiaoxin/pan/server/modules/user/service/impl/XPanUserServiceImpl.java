@@ -5,6 +5,9 @@ import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.response.ResponseCode;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.core.utils.PasswordUtil;
+import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
+import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
+import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
 import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
@@ -14,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.Objects;
 
@@ -30,6 +34,9 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
     @Autowired
     private UserConverter userConverter;
 
+    @Autowired
+    private XPanUserFileService xPanUserFileService;
+
     public XPanUserServiceImpl(UserConverter userConverter) {
         this.userConverter = userConverter;
     }
@@ -45,8 +52,17 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         return userRegisterContext.getEntity().getUserId();
     }
 
+    /**
+     * 创建用户的根目录信息
+     *
+     * @param userRegisterContext
+     */
     private void createUserRootFolder(UserRegisterContext userRegisterContext) {
-
+        CreateFolderContext createFolderContext = new CreateFolderContext();
+        createFolderContext.setParentId(FileConstants.TOP_PARENT_ID);
+        createFolderContext.setUserId(userRegisterContext.getEntity().getUserId());
+        createFolderContext.setFolderName(FileConstants.ALL_FILE_CN_STR);
+        xPanUserFileService.createFolder(createFolderContext);
     }
 
     /**
@@ -65,6 +81,7 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
             } catch (DuplicateKeyException duplicateKeyException) {
                 throw new XPanBusinessException("用户名存在！");
             }
+            return;
         }
         throw new XPanBusinessException(ResponseCode.ERROR);
     }
@@ -83,8 +100,8 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         entity.setUserId(IdUtil.get());
         entity.setSalt(salt);
         entity.setPassword(dbPassword);
-        entity.setCreateTime(new Date());
-        entity.setUpdateTime(new Date());
+        entity.setCreateTime(LocalDate.now());
+        entity.setUpdateTime(LocalDate.now());
         userRegisterContext.setEntity(entity);
     }
 }

@@ -2,6 +2,7 @@ package com.xiaoxin.pan.server.modules.log.mapper;
 
 import com.xiaoxin.pan.server.modules.log.entity.XPanErrorLog;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
 * @author xiaoxin
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2024-07-26 12:49:23
 * @Entity com.xiaoxin.pan.server.modules.log.entity.XPanErrorLog
 */
+@Mapper
 public interface XPanErrorLogMapper extends BaseMapper<XPanErrorLog> {
 
 }
