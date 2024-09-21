@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @ToString
 public class DeleteFileEvent extends ApplicationEvent {
 
