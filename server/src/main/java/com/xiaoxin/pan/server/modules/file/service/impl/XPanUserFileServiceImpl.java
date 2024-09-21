@@ -1,13 +1,16 @@
 package com.xiaoxin.pan.server.modules.file.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.utils.IdUtil;
+import com.xiaoxin.pan.server.common.envent.DeleteFileEvent;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
+import com.xiaoxin.pan.server.modules.file.context.DeleteFileContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
 import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
@@ -15,12 +18,16 @@ import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import com.xiaoxin.pan.server.modules.file.enmus.FolderFlagEnum;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author xiaoxin
@@ -29,7 +36,14 @@ import java.util.Objects;
  */
 @Service
 public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPanUserFile>
-        implements XPanUserFileService {
+        implements XPanUserFileService, ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
 
     /**
      * 创建文件夹信息
@@ -87,6 +101,72 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     public void updateFileName(UpdateFilenameContext updateFilenameContext) {
         checkUpdateFilenameCondition(updateFilenameContext);
         doUpdateFilename(updateFilenameContext);
+    }
+
+    /**
+     * 批量删除文件
+     * 1、校验删除的条件
+     * 2、执行批量删除的动作
+     * 3、发布批量删除文件的事件，给其他模块订阅使用
+     */
+    @Override
+    public void deleteFile(DeleteFileContext deleteFileContext) {
+        checkFileDeleteCondition(deleteFileContext);
+        doDeleteFile(deleteFileContext);
+        afterFileDelete(deleteFileContext);
+    }
+
+    /**
+     * 删除文件后置处理
+     * 对外发布文件删除的事件
+     * @param deleteFileContext
+     */
+    private void afterFileDelete(DeleteFileContext deleteFileContext) {
+        DeleteFileEvent deleteFileEvent = new DeleteFileEvent(this, deleteFileContext.getFileIdList());
+        applicationContext.publishEvent(deleteFileEvent);
+    }
+
+    /**
+     * 删除文件操作
+     * @param deleteFileContext
+     */
+    private void doDeleteFile(DeleteFileContext deleteFileContext) {
+        List<Long> fileIdList = deleteFileContext.getFileIdList();
+        UpdateWrapper<XPanUserFile> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.in("file_id", fileIdList);
+        updateWrapper.set("del_flag", DelFlagEnum.YES.getCode());
+        updateWrapper.set("update_time", new Date());
+        if (!update(updateWrapper)) {
+            throw new XPanBusinessException("文件删除失败");
+        }
+    }
+
+    /**
+     * 删除文件之前的前置校验
+     * 1、文件ID合法校验
+     * 2、用户拥有删除该文件的权限
+     */
+    private void checkFileDeleteCondition(DeleteFileContext deleteFileContext) {
+        List<Long> fileIdList = deleteFileContext.getFileIdList();
+        List<XPanUserFile> xPanUserFiles = listByIds(fileIdList);
+        if (xPanUserFiles.size() != fileIdList.size()) {
+            throw new XPanBusinessException("存在不合法的文件记录");
+        }
+        Set<Long> fileIdSet = xPanUserFiles.stream().map(XPanUserFile::getFileId).collect(Collectors.toSet());
+        int oldSize = fileIdSet.size();
+        fileIdSet.addAll(fileIdList);
+        int newSize = fileIdSet.size();
+        if (newSize != oldSize) {
+            throw new XPanBusinessException("存在不合法的文件记录");
+        }
+        Set<Long> userIdSet = xPanUserFiles.stream().map(XPanUserFile::getUserId).collect(Collectors.toSet());
+        if (userIdSet.size() != 1) {
+            throw new XPanBusinessException("存在不合法的文件记录");
+        }
+        Long userId = userIdSet.stream().findFirst().get();
+        if (!Objects.equals(userId, deleteFileContext.getUserId())) {
+            throw new XPanBusinessException("当前登录用户没有删除该文件的权限");
+        }
     }
 
     /**
