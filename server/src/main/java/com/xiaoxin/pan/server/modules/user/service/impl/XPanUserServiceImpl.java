@@ -1,6 +1,7 @@
 package com.xiaoxin.pan.server.modules.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoxin.pan.cache.core.constanst.CacheConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
@@ -12,8 +13,7 @@ import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.user.constants.UserConstants;
-import com.xiaoxin.pan.server.modules.user.context.UserLoginContext;
-import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
+import com.xiaoxin.pan.server.modules.user.context.*;
 import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
@@ -83,6 +83,7 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
     /**
      * 用户退出登录
      * 清除用户的登录凭证缓存
+     *
      * @param userId
      */
     @Override
@@ -94,6 +95,58 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
             e.printStackTrace();
             throw new XPanBusinessException("用户退出登录失败");
         }
+    }
+
+    /**
+     * 用户忘记密码-校验用户名称
+     *
+     * @param checkUsernameContext
+     * @return
+     */
+    @Override
+    public String checkUsername(CheckUsernameContext checkUsernameContext) {
+        String question = baseMapper.selectQuestionByUsername(checkUsernameContext.getUsername());
+        if (StringUtils.isBlank(question)) {
+            throw new XPanBusinessException("没有此用户");
+        }
+        return question;
+    }
+
+    /**
+     * 用户忘记密码-校验密保答案
+     *
+     * @return 临时token
+     */
+    @Override
+    public String checkAnswer(CheckAnswerContext checkAnswerContext) {
+        QueryWrapper<XPanUser> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", checkAnswerContext.getUsername());
+        queryWrapper.eq("question", checkAnswerContext.getQuestion());
+        queryWrapper.eq("answer", checkAnswerContext.getAnswer());
+        int count = count(queryWrapper);
+
+        if (count == 0) {
+            throw new XPanBusinessException("密保答案错误");
+        }
+
+        return generateCheckAnswerToken(checkAnswerContext);
+    }
+
+    private String generateCheckAnswerToken(CheckAnswerContext checkAnswerContext) {
+        return JwtUtil.generateToken(checkAnswerContext.getUsername(), UserConstants.FORGET_USERNAME, checkAnswerContext.getUsername(), UserConstants.FIVE_MINUTES_LONG);
+    }
+
+    /**
+     * 重置用户密码
+     * 1、校验token是不是有效
+     * 2、重置密码
+     *
+     * @param resetPasswordContext
+     */
+    @Override
+    public void resetPassword(ResetPasswordContext resetPasswordContext) {
+        checkForgetPasswordToken(resetPasswordContext);
+        checkAndResetUserPassword(resetPasswordContext);
     }
 
 
@@ -195,6 +248,46 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         cache.put(UserConstants.USER_LOGIN_PREFIX + entity.getUserId(), accessToken);
         userLoginContext.setAccessToken(accessToken);
     }
+
+    /**
+     * 验证忘记密码的token是否有效
+     *
+     * @param resetPasswordContext
+     */
+    private void checkForgetPasswordToken(ResetPasswordContext resetPasswordContext) {
+        String token = resetPasswordContext.getToken();
+        Object value = JwtUtil.analyzeToken(token, UserConstants.FORGET_USERNAME);
+        if (Objects.isNull(value)) {
+            throw new XPanBusinessException(ResponseCode.TOKEN_EXPIRE);
+        }
+        String tokenUsername = String.valueOf(value);
+        if (!Objects.equals(tokenUsername, resetPasswordContext.getUsername())) {
+            throw new XPanBusinessException("token错误");
+        }
+    }
+
+    /**
+     * 校验用户信息并重置用户密码
+     *
+     * @param resetPasswordContext
+     */
+    private void checkAndResetUserPassword(ResetPasswordContext resetPasswordContext) {
+        String username = resetPasswordContext.getUsername();
+        String password = resetPasswordContext.getPassword();
+        XPanUser entity = getRPanUserByUsername(username);
+        if (Objects.isNull(entity)) {
+            throw new XPanBusinessException("用户信息不存在");
+        }
+
+        String newDbPassword = PasswordUtil.encryptPassword(entity.getSalt(), password);
+        entity.setPassword(newDbPassword);
+        entity.setUpdateTime(LocalDate.now());
+
+        if (!updateById(entity)) {
+            throw new XPanBusinessException("重置用户密码失败");
+        }
+    }
+
 }
 
 

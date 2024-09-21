@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.utils.JwtUtil;
 import com.xiaoxin.pan.server.modules.user.constants.UserConstants;
+import com.xiaoxin.pan.server.modules.user.context.CheckUsernameContext;
 import com.xiaoxin.pan.server.modules.user.context.UserLoginContext;
 import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
@@ -129,6 +130,16 @@ public class UserTest {
         Long userId = (Long) JwtUtil.analyzeToken(accessToken, UserConstants.LOGIN_USER_ID);
 
         xPanUserService.exit(userId);
+    }
+
+    /**
+     * 检查用户名是否存在
+     */
+    @Test
+    public void checkUsername() {
+        CheckUsernameContext checkUsernameContext = new CheckUsernameContext();
+        checkUsernameContext.setUsername("xiaoxin");
+        xPanUserService.checkUsername(checkUsernameContext);
     }
 
 }

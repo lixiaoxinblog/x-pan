@@ -3,11 +3,9 @@ package com.xiaoxin.pan.server.modules.user.controller;
 import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.annotation.LoginIgnore;
-import com.xiaoxin.pan.server.modules.user.context.UserLoginContext;
-import com.xiaoxin.pan.server.modules.user.context.UserRegisterContext;
+import com.xiaoxin.pan.server.modules.user.context.*;
 import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
-import com.xiaoxin.pan.server.modules.user.po.UserLoginPO;
-import com.xiaoxin.pan.server.modules.user.po.UserRegisterPO;
+import com.xiaoxin.pan.server.modules.user.po.*;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -77,5 +75,55 @@ public class UserController {
         userService.exit(IdUtil.get());
         return R.success("退出登录成功！");
     }
+
+    /**
+     *
+     * 校验用户名
+     * @param checkUsernamePO
+     * @return
+     */
+    @ApiOperation(
+            value = "用户忘记密码-校验用户名",
+            notes = "该接口提供了用户忘记密码-校验用户名的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @LoginIgnore
+    @PostMapping("username/check")
+    public R checkUsername(@Validated @RequestBody CheckUsernamePO checkUsernamePO) {
+        CheckUsernameContext checkUsernameContext = userConverter.checkUsernamePO2CheckUsernameContext(checkUsernamePO);
+        String question = userService.checkUsername(checkUsernameContext);
+        return R.data(question);
+    }
+
+    @ApiOperation(
+            value = "用户忘记密码-校验密保答案",
+            notes = "该接口提供了用户忘记密码-校验密保答案的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @LoginIgnore
+    @PostMapping("answer/check")
+    public R checkAnswer(@Validated @RequestBody CheckAnswerPO checkAnswerPO) {
+        CheckAnswerContext checkAnswerContext = userConverter.checkAnswerPO2CheckAnswerContext(checkAnswerPO);
+        String token = userService.checkAnswer(checkAnswerContext);
+        return R.data(token);
+    }
+
+
+    @ApiOperation(
+            value = "用户忘记密码-重置新密码",
+            notes = "该接口提供了用户忘记密码-重置新密码的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("password/reset")
+    @LoginIgnore
+    public R resetPassword(@Validated @RequestBody ResetPasswordPO resetPasswordPO) {
+        ResetPasswordContext resetPasswordContext = userConverter.resetPasswordPO2ResetPasswordContext(resetPasswordPO);
+        userService.resetPassword(resetPasswordContext);
+        return R.success();
+    }
+
 
 }

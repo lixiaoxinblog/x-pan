@@ -3,6 +3,7 @@ package com.xiaoxin.pan.server.modules.user.mapper;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
 * @author xiaoxin
@@ -13,6 +14,13 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface XPanUserMapper extends BaseMapper<XPanUser> {
 
+    /**
+     * 通过用户名称查询用户设置的密保问题
+     *
+     * @param username
+     * @return
+     */
+    String selectQuestionByUsername(@Param("username") String username);
 }
 
 
