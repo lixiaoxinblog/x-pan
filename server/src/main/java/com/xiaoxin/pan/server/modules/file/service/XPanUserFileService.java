@@ -1,8 +1,13 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
+import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
+import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+
+import java.util.List;
 
 /**
  * @author xiaoxin
@@ -13,4 +18,17 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
     public Long createFolder(CreateFolderContext createFolderContext);
 
     XPanUserFile getUserRootFile(Long userId);
+
+    /**
+     * 查询列表
+     * @param queryFileListContext 查询上下文
+     * @return 文件列表
+     */
+    List<XPanUserFileVO> getFileList(QueryFileListContext queryFileListContext);
+
+    /**
+     * 文件重命名
+     * @param updateFilenameContext
+     */
+    void updateFileName(UpdateFilenameContext updateFilenameContext);
 }

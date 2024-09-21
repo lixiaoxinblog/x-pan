@@ -1,8 +1,13 @@
 package com.xiaoxin.pan.server.modules.file.mapper;
 
+import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author xiaoxin
@@ -13,6 +18,7 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface XPanUserFileMapper extends BaseMapper<XPanUserFile> {
 
+    List<XPanUserFileVO> selectFileList(@Param("param") QueryFileListContext context);
 }
 
 

@@ -8,14 +8,19 @@ import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
+import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
+import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
 import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import org.springframework.stereotype.Service;
 import com.xiaoxin.pan.server.modules.file.enmus.FolderFlagEnum;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author xiaoxin
@@ -59,7 +64,71 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         return getOne(queryWrapper);
     }
 
+    /**
+     * 查询用户的文件列表
+     *
+     * @param context
+     * @return
+     */
+    @Override
+    public List<XPanUserFileVO> getFileList(QueryFileListContext context) {
+        return baseMapper.selectFileList(context);
+    }
 
+
+    /**
+     * 更新文件名称
+     * 1、校验更新文件名称的条件
+     * 2、执行更新文件名称的操作
+     *
+     * @param updateFilenameContext 更新文件名称的参数对象
+     */
+    @Override
+    public void updateFileName(UpdateFilenameContext updateFilenameContext) {
+        checkUpdateFilenameCondition(updateFilenameContext);
+        doUpdateFilename(updateFilenameContext);
+    }
+
+    /**
+     * 执行文件重命名的操作
+     */
+    private void doUpdateFilename(UpdateFilenameContext updateFilenameContext) {
+        XPanUserFile xPanUserFile = updateFilenameContext.getEntity();
+        xPanUserFile.setFilename(updateFilenameContext.getNewFilename());
+        xPanUserFile.setUpdateUser(updateFilenameContext.getUserId());
+        xPanUserFile.setUpdateTime(new Date());
+        if (!updateById(xPanUserFile)) {
+            throw new XPanBusinessException("文件重命名失败！");
+        }
+    }
+
+    /**
+     * 更新文件名称的条件校验
+     * 1、文件ID是有效的
+     * 2、用户有权限更新该文件的文件名称
+     * 3、新旧文件名称不能一样
+     * 4、不能使用当前文件夹下面的子文件的名称
+     */
+    private void checkUpdateFilenameCondition(UpdateFilenameContext updateFilenameContext) {
+        Long fileId = updateFilenameContext.getFileId();
+        XPanUserFile xPanUserFile = getById(fileId);
+        if (Objects.isNull(xPanUserFile)) {
+            throw new XPanBusinessException("该文件ID无效");
+        }
+        if (!Objects.equals(xPanUserFile.getUserId(), updateFilenameContext.getUserId())) {
+            throw new XPanBusinessException("当前登录用户没有修改该文件名称的权限");
+        }
+        if (Objects.equals(xPanUserFile.getFilename(), updateFilenameContext.getNewFilename())) {
+            throw new XPanBusinessException("新旧文件名称一致，无需更新");
+        }
+        QueryWrapper<XPanUserFile> xPanUserFileQueryWrapper = new QueryWrapper<>();
+        xPanUserFileQueryWrapper.eq("parent_id", xPanUserFile.getParentId());
+        xPanUserFileQueryWrapper.eq("filename", updateFilenameContext.getNewFilename());
+        if (count(xPanUserFileQueryWrapper) > 0) {
+            throw new XPanBusinessException("改文件名已被占用");
+        }
+        updateFilenameContext.setEntity(xPanUserFile);
+    }
 
     /**
      * 保存用户文件的映射记录
