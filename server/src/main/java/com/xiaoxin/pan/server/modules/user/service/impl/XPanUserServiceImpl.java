@@ -11,6 +11,7 @@ import com.xiaoxin.pan.core.utils.JwtUtil;
 import com.xiaoxin.pan.core.utils.PasswordUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
+import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.user.constants.UserConstants;
 import com.xiaoxin.pan.server.modules.user.context.*;
@@ -18,6 +19,7 @@ import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
 import com.xiaoxin.pan.server.modules.user.mapper.XPanUserMapper;
+import com.xiaoxin.pan.server.modules.user.vo.XPanUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -64,14 +66,10 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 用户登录业务实现
-     * <p>
      * 需要实现的功能：
      * 1、用户的登录信息校验
      * 2、生成一个具有时效性的accessToken
      * 3、将accessToken缓存起来，去实现单机登录
-     *
-     * @param userLoginContext
-     * @return
      */
     @Override
     public String login(UserLoginContext userLoginContext) {
@@ -83,8 +81,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
     /**
      * 用户退出登录
      * 清除用户的登录凭证缓存
-     *
-     * @param userId
      */
     @Override
     public void exit(Long userId) {
@@ -99,9 +95,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 用户忘记密码-校验用户名称
-     *
-     * @param checkUsernameContext
-     * @return
      */
     @Override
     public String checkUsername(CheckUsernameContext checkUsernameContext) {
@@ -140,8 +133,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
      * 重置用户密码
      * 1、校验token是不是有效
      * 2、重置密码
-     *
-     * @param resetPasswordContext
      */
     @Override
     public void resetPassword(ResetPasswordContext resetPasswordContext) {
@@ -149,11 +140,50 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         checkAndResetUserPassword(resetPasswordContext);
     }
 
+    /**
+     * 在线修改密码
+     * 1、校验旧密码
+     * 2、重置新密码
+     * 3、退出当前的登录状态
+     */
+    @Override
+    public void changePassword(ChangePasswordContext changePasswordContext) {
+        checkOldPassword(changePasswordContext);
+        doChangePassword(changePasswordContext);
+        exitLoginStatus(changePasswordContext);
+    }
+
+    /**
+     * 查询在线用户基本信息及根目录信息
+     *
+     * @param userId 用户ID
+     * @return 用户信息
+     */
+    @Override
+    public XPanUserVO info(Long userId) {
+        XPanUser entity = getById(userId);
+        if (Objects.isNull(entity)) {
+            throw new XPanBusinessException("用户信息查询失败");
+        }
+        XPanUserFile xPanUserFile = getUserRootFileInfo(userId);
+        if (Objects.isNull(xPanUserFile)) {
+            throw new XPanBusinessException("用户根目录信息查询失败!");
+        }
+        return userConverter.assembleUserInfoVO(entity, xPanUserFile);
+    }
+
+    /**
+     * 获取用户根目录信息
+     *
+     * @param userId
+     */
+    private XPanUserFile getUserRootFileInfo(Long userId) {
+        return xPanUserFileService.getUserRootFile(userId);
+
+    }
 
     /**
      * 创建用户的根目录信息
-     *
-     * @param userRegisterContext
      */
     private void createUserRootFolder(UserRegisterContext userRegisterContext) {
         CreateFolderContext createFolderContext = new CreateFolderContext();
@@ -166,8 +196,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
     /**
      * 实现注册用户的业务
      * 需要捕获数据库的唯一索引冲突异常，来实现全局用户名称唯一
-     *
-     * @param userRegisterContext
      */
     private void doRegister(UserRegisterContext userRegisterContext) {
         XPanUser entity = userRegisterContext.getEntity();
@@ -188,8 +216,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
     /**
      * 实体转化
      * 由上下文信息转化成用户实体，封装进上下文
-     *
-     * @param userRegisterContext
      */
     private void assembleUserEntity(UserRegisterContext userRegisterContext) {
         XPanUser entity = userConverter.userRegisterContext2RPanUser(userRegisterContext);
@@ -205,8 +231,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 校验用户名密码
-     *
-     * @param userLoginContext
      */
     private void checkLoginInfo(UserLoginContext userLoginContext) {
         String username = userLoginContext.getUsername();
@@ -226,9 +250,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 通过用户名称获取用户实体信息
-     *
-     * @param username
-     * @return
      */
     private XPanUser getRPanUserByUsername(String username) {
         QueryWrapper<XPanUser> queryWrapper = new QueryWrapper<>();
@@ -238,8 +259,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 生成并保存登陆之后的凭证
-     *
-     * @param userLoginContext
      */
     private void generateAndSaveAccessToken(UserLoginContext userLoginContext) {
         XPanUser entity = userLoginContext.getEntity();
@@ -251,8 +270,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 验证忘记密码的token是否有效
-     *
-     * @param resetPasswordContext
      */
     private void checkForgetPasswordToken(ResetPasswordContext resetPasswordContext) {
         String token = resetPasswordContext.getToken();
@@ -268,8 +285,6 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     /**
      * 校验用户信息并重置用户密码
-     *
-     * @param resetPasswordContext
      */
     private void checkAndResetUserPassword(ResetPasswordContext resetPasswordContext) {
         String username = resetPasswordContext.getUsername();
@@ -286,6 +301,50 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         if (!updateById(entity)) {
             throw new XPanBusinessException("重置用户密码失败");
         }
+    }
+
+    /**
+     * 校验用户的旧密码
+     * 改不周会查询并封装用户的实体信息到上下文对象中
+     */
+    private void checkOldPassword(ChangePasswordContext changePasswordContext) {
+        Long userId = changePasswordContext.getUserId();
+        String oldPassword = changePasswordContext.getOldPassword();
+        XPanUser entity = getById(userId);
+        if (Objects.isNull(entity)) {
+            throw new XPanBusinessException("用户信息不存在");
+        }
+        changePasswordContext.setEntity(entity);
+
+        String encOldPassword = PasswordUtil.encryptPassword(entity.getSalt(), oldPassword);
+        String dbOldPassword = entity.getPassword();
+        if (!Objects.equals(encOldPassword, dbOldPassword)) {
+            throw new XPanBusinessException("旧密码不正确");
+        }
+    }
+
+    /**
+     * 修改新密码
+     */
+    private void doChangePassword(ChangePasswordContext changePasswordContext) {
+        String newPassword = changePasswordContext.getNewPassword();
+        XPanUser entity = changePasswordContext.getEntity();
+        String salt = entity.getSalt();
+
+        String encNewPassword = PasswordUtil.encryptPassword(salt, newPassword);
+
+        entity.setPassword(encNewPassword);
+
+        if (!updateById(entity)) {
+            throw new XPanBusinessException("修改用户密码失败");
+        }
+    }
+
+    /**
+     * 退出用户的登录状态
+     */
+    private void exitLoginStatus(ChangePasswordContext changePasswordContext) {
+        exit(changePasswordContext.getUserId());
     }
 
 }

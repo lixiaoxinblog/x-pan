@@ -3,6 +3,7 @@ package com.xiaoxin.pan.server.modules.user.service;
 import com.xiaoxin.pan.server.modules.user.context.*;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaoxin.pan.server.modules.user.vo.XPanUserVO;
 
 /**
 * @author xiaoxin
@@ -22,4 +23,8 @@ public interface XPanUserService extends IService<XPanUser> {
     String checkAnswer(CheckAnswerContext checkAnswerContext);
 
     void resetPassword(ResetPasswordContext resetPasswordContext);
+
+    void changePassword(ChangePasswordContext changePasswordContext);
+
+    XPanUserVO info(Long userId);
 }

@@ -44,6 +44,24 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     }
 
     /**
+     * 查询用户的根文件夹信息
+     *
+     * @param userId 用户ID
+     * @return 返回用户文件信息
+     */
+    @Override
+    public XPanUserFile getUserRootFile(Long userId) {
+        QueryWrapper<XPanUserFile> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        queryWrapper.eq("parent_id", FileConstants.TOP_PARENT_ID);
+        queryWrapper.eq("del_flag", DelFlagEnum.NO.getCode());
+        queryWrapper.eq("folder_flag", FolderFlagEnum.YES.getCode());
+        return getOne(queryWrapper);
+    }
+
+
+
+    /**
      * 保存用户文件的映射记录
      *
      * @param parentId

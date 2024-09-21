@@ -11,4 +11,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface XPanUserFileService extends IService<XPanUserFile> {
     public Long createFolder(CreateFolderContext createFolderContext);
+
+    XPanUserFile getUserRootFile(Long userId);
 }

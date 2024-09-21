@@ -3,19 +3,19 @@ package com.xiaoxin.pan.server.modules.user.controller;
 import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.annotation.LoginIgnore;
+import com.xiaoxin.pan.server.common.utils.UserIdUtil;
 import com.xiaoxin.pan.server.modules.user.context.*;
 import com.xiaoxin.pan.server.modules.user.converter.UserConverter;
+import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.xiaoxin.pan.server.modules.user.po.*;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
+import com.xiaoxin.pan.server.modules.user.vo.XPanUserVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("user")
@@ -77,8 +77,8 @@ public class UserController {
     }
 
     /**
-     *
      * 校验用户名
+     *
      * @param checkUsernamePO
      * @return
      */
@@ -125,5 +125,24 @@ public class UserController {
         return R.success();
     }
 
+    @ApiOperation(
+            value = "用户在线修改密码",
+            notes = "该接口提供了用户在线修改密码的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("password/change")
+    public R changePassword(@Validated @RequestBody ChangePasswordPO changePasswordPO) {
+        ChangePasswordContext changePasswordContext = userConverter.changePasswordPO2ChangePasswordContext(changePasswordPO);
+        changePasswordContext.setUserId(UserIdUtil.get());
+        userService.changePassword(changePasswordContext);
+        return R.success();
+    }
+
+    @GetMapping("/")
+    public R<XPanUserVO> info() {
+        XPanUserVO userInfoVO = userService.info(UserIdUtil.get());
+        return R.data(userInfoVO);
+    }
 
 }
