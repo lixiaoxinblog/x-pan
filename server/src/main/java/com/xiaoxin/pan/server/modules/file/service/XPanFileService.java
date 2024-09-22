@@ -1,6 +1,7 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
+import com.xiaoxin.pan.server.modules.file.context.QueryRealFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
@@ -14,4 +15,5 @@ import java.util.List;
 */
 public interface XPanFileService extends IService<XPanFile> {
 
+    List<XPanFile> getFileList(QueryRealFileListContext queryRealFileListContext);
 }

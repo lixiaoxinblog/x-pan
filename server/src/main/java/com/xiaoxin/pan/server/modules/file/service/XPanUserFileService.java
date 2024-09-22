@@ -1,9 +1,6 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
-import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
-import com.xiaoxin.pan.server.modules.file.context.DeleteFileContext;
-import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
-import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
+import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
@@ -38,4 +35,6 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @param deleteFileContext
      */
     void deleteFile(DeleteFileContext deleteFileContext);
+
+    boolean secUpload(UploadFileContext uploadFileContext);
 }

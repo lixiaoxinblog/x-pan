@@ -3,8 +3,10 @@ package com.xiaoxin.pan.server.modules.file.converter;
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
 import com.xiaoxin.pan.server.modules.file.context.DeleteFileContext;
 import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
+import com.xiaoxin.pan.server.modules.file.context.UploadFileContext;
 import com.xiaoxin.pan.server.modules.file.po.CreateFolderPO;
 import com.xiaoxin.pan.server.modules.file.po.DeleteFilePO;
+import com.xiaoxin.pan.server.modules.file.po.SecUploadFilePO;
 import com.xiaoxin.pan.server.modules.file.po.UpdateFilenamePO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -24,4 +26,8 @@ public interface FileConverter {
 
     @Mapping(target = "userId", expression = "java(com.xiaoxin.pan.server.common.utils.UserIdUtil.get())")
     DeleteFileContext deleteFilePO2DeleteFileContext(DeleteFilePO deleteFilePO);
+
+    @Mapping(target = "parentId", expression = "java(com.xiaoxin.pan.core.utils.IdUtil.decrypt(secUploadFilePO.getParentId()))")
+    @Mapping(target = "userId", expression = "java(com.xiaoxin.pan.server.common.utils.UserIdUtil.get())")
+    UploadFileContext uploadFilePO2UploadFileContext(SecUploadFilePO secUploadFilePO);
 }

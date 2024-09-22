@@ -6,14 +6,12 @@ import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.utils.UserIdUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
-import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
-import com.xiaoxin.pan.server.modules.file.context.DeleteFileContext;
-import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
-import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
+import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
 import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.po.CreateFolderPO;
 import com.xiaoxin.pan.server.modules.file.po.DeleteFilePO;
+import com.xiaoxin.pan.server.modules.file.po.SecUploadFilePO;
 import com.xiaoxin.pan.server.modules.file.po.UpdateFilenamePO;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
@@ -133,6 +131,25 @@ public class FileController {
         deleteFileContext.setFileIdList(fileIdList);
         xPanUserFileService.deleteFile(deleteFileContext);
         return R.success();
+    }
+
+    /**
+     * 文件秒传
+     */
+    @ApiOperation(
+            value = "文件秒传",
+            notes = "该接口提供了文件秒传的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("/upload")
+    public R secUpload(@Validated @RequestBody SecUploadFilePO secUploadFilePO) {
+        UploadFileContext uploadFileContext = fileConverter.uploadFilePO2UploadFileContext(secUploadFilePO);
+        boolean result = xPanUserFileService.secUpload(uploadFileContext);
+        if(result){
+            return R.success();
+        }
+        return R.fail("文件唯一表示不存在，请手动执行文件上传");
     }
 
 }

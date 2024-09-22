@@ -2,22 +2,27 @@ package com.xiaoxin.pan.server.modules.file.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
+import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.envent.DeleteFileEvent;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
-import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
-import com.xiaoxin.pan.server.modules.file.context.DeleteFileContext;
-import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
-import com.xiaoxin.pan.server.modules.file.context.UpdateFilenameContext;
+import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
+import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
+import com.xiaoxin.pan.server.modules.file.enums.FileTypeEnum;
+import com.xiaoxin.pan.server.modules.file.po.SecUploadFilePO;
+import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
@@ -39,6 +44,9 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         implements XPanUserFileService, ApplicationContextAware {
 
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private XPanFileService xPanFileService;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -117,8 +125,43 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     }
 
     /**
+     * 文件秒传功能
+     * 1、判断用户之前是否上传过该文件
+     * 2、如果上传过该文件，只需要生成一个该文件和当前用户在指定文件夹下面的关联关系即可
+     *
+     * @param uploadFileContext
+     * @return true 代表用户之前上传过相同文件并成功挂在了关联关系 false 用户没有上传过该文件，请手动执行上传逻辑
+     */
+    @Override
+    public boolean secUpload(UploadFileContext uploadFileContext) {
+        List<XPanFile> fileList = getFileListByUserIdAndIdentifier(uploadFileContext.getUserId(), uploadFileContext.getIdentifier());
+        if (CollectionUtils.isNotEmpty(fileList)) {
+            XPanFile record = fileList.get(XPanConstants.ZERO_INT);
+            saveUserFile(uploadFileContext.getParentId(),
+                    uploadFileContext.getFilename(),
+                    FolderFlagEnum.NO,
+                    FileTypeEnum.getFileTypeCode(FileUtils.getFileSuffix(uploadFileContext.getFilename())),
+                    record.getFileId(),
+                    uploadFileContext.getUserId(),
+                    record.getFileSizeDesc());
+            return true;
+        }
+        return false;
+    }
+
+    private List<XPanFile> getFileListByUserIdAndIdentifier(Long userId, String identifier) {
+        QueryRealFileListContext queryRealFileListContext = new QueryRealFileListContext();
+        queryRealFileListContext.setUserId(userId);
+        queryRealFileListContext.setIdentifier(identifier);
+        return xPanFileService.getFileList(queryRealFileListContext);
+
+    }
+
+
+    /**
      * 删除文件后置处理
      * 对外发布文件删除的事件
+     *
      * @param deleteFileContext
      */
     private void afterFileDelete(DeleteFileContext deleteFileContext) {
@@ -128,6 +171,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
 
     /**
      * 删除文件操作
+     *
      * @param deleteFileContext
      */
     private void doDeleteFile(DeleteFileContext deleteFileContext) {
