@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
+import com.xiaoxin.pan.server.modules.file.context.FileChunkSaveContext;
 import com.xiaoxin.pan.server.modules.file.context.FileSaveContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryRealFileListContext;

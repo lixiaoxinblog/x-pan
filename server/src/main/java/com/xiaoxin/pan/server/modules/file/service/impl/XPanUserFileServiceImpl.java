@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
@@ -13,19 +14,23 @@ import com.xiaoxin.pan.server.common.envent.file.DeleteFileEvent;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
-import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
+import com.xiaoxin.pan.server.modules.file.entity.XPanFileChunk;
+import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.enums.FileTypeEnum;
+import com.xiaoxin.pan.server.modules.file.service.XPanFileChunkService;
 import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
+import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
+import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
-import com.xiaoxin.pan.server.modules.file.enmus.FolderFlagEnum;
+import com.xiaoxin.pan.server.modules.file.enums.FolderFlagEnum;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
@@ -49,6 +54,8 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     private XPanFileService xPanFileService;
     @Autowired
     private FileConverter fileConverter;
+    @Autowired
+    private XPanFileChunkService xPanFileChunkService;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -168,6 +175,42 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
                 fileUploadContext.getRecord().getFileId(),
                 fileUploadContext.getUserId(),
                 fileUploadContext.getRecord().getFileSizeDesc());
+    }
+
+    /**
+     * 文件分片上传
+     * 1、上传实体文件
+     * 2、保存分片文件记录
+     * 3、校验是否全部分片上传完成
+     *
+     * @param fileChunkUploadContext
+     * @return
+     */
+    @Override
+    public FileChunkUploadVO chunkUpload(FileChunkUploadContext fileChunkUploadContext) {
+        FileChunkSaveContext fileChunkSaveContext = fileConverter.fileChunkUploadContext2FileChunkSaveContext(fileChunkUploadContext);
+        xPanFileChunkService.saveChunkFile(fileChunkSaveContext);
+        FileChunkUploadVO vo = new FileChunkUploadVO();
+        vo.setMergeFlag(fileChunkSaveContext.getMergeFlagEnum().getCode());
+        return vo;
+    }
+
+    /**
+     * 查询用户已上传的分片列表
+     * 1、查询已上传的分片列表
+     * 2、封装返回实体
+     */
+    @Override
+    public UploadedChunksVO getUploadedChunks(QueryUploadedChunksContext queryUploadedChunksContext) {
+        QueryWrapper<XPanFileChunk> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("chunk_number");
+        queryWrapper.eq("identifier",queryUploadedChunksContext.getIdentifier());
+        queryWrapper.eq("create_user",queryUploadedChunksContext.getUserId());
+        queryWrapper.gt("expiration_time",new Date());
+        List<Integer> uploadedChunks = xPanFileChunkService.listObjs(queryWrapper,value ->(Integer) value);
+        UploadedChunksVO uploadedChunksVO = new UploadedChunksVO();
+        uploadedChunksVO.setUploadedChunks(uploadedChunks);
+        return uploadedChunksVO;
     }
 
     /**

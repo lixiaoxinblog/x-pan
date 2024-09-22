@@ -2,6 +2,7 @@ package com.xiaoxin.pan.server.modules.file.converter;
 
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.po.*;
+import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -32,4 +33,14 @@ public interface FileConverter {
     @Mapping(target = "record", ignore = true)
     FileSaveContext fileUploadContext2FileSaveContext(FileUploadContext context);
 
+    @Mapping(target = "userId", expression = "java(com.xiaoxin.pan.server.common.utils.UserIdUtil.get())")
+    FileChunkUploadContext fileChunkUploadPO2FileChunkUploadContext(FileChunkUploadPO fileChunkUploadPO);
+
+    FileChunkSaveContext fileChunkUploadContext2FileChunkSaveContext(FileChunkUploadContext fileChunkUploadContext);
+
+    @Mapping(target = "realPath", ignore = true)
+    StoreFileChunkContext fileChunkSaveContext2StoreFileChunkContext(FileChunkSaveContext context);
+
+    @Mapping(target = "userId", expression = "java(com.xiaoxin.pan.server.common.utils.UserIdUtil.get())")
+    QueryUploadedChunksContext queryUploadedChunksPO2QueryUploadedChunksContext(QueryUploadedChunksPO queryUploadedChunksPO);
 }

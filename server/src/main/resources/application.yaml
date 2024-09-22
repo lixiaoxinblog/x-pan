@@ -47,3 +47,4 @@ com:
         engine:
           local:
             root-file-path: F:\xpan\upload
+            root-file-chunk-path: F:\xpan\chunk

@@ -2,6 +2,7 @@ package com.xiaoxin.pan.storge.engine.core;
 
 
 import com.xiaoxin.pan.storge.engine.core.context.DeleteFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
 import com.xiaoxin.pan.storge.engine.core.context.StoreFileContext;
 
 import java.io.IOException;
@@ -27,5 +28,10 @@ public interface StorageEngine {
      */
     void delete(DeleteFileContext deleteFileContext) throws IOException;
 
-
+    /**
+     * 文件分片上传
+     * @param storeFileChunkContext
+     * @throws IOException
+     */
+    void storeChunk(StoreFileChunkContext storeFileChunkContext) throws IOException;
 }

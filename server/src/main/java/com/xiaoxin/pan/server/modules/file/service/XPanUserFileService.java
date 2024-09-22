@@ -3,6 +3,8 @@ package com.xiaoxin.pan.server.modules.file.service;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
+import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 
 import java.util.List;
@@ -48,4 +50,18 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @param fileUploadContext
      */
     void upload(FileUploadContext fileUploadContext);
+
+    /**
+     * 文件分片上传
+     * @param fileChunkUploadContext
+     * @return
+     */
+    FileChunkUploadVO chunkUpload(FileChunkUploadContext fileChunkUploadContext);
+
+    /**
+     * 获取已经上传的分片
+     * @param queryUploadedChunksContext
+     * @return
+     */
+    UploadedChunksVO getUploadedChunks(QueryUploadedChunksContext queryUploadedChunksContext);
 }

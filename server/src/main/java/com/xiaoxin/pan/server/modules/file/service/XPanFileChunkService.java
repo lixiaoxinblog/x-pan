@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
+import com.xiaoxin.pan.server.modules.file.context.FileChunkSaveContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFileChunk;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -10,4 +11,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface XPanFileChunkService extends IService<XPanFileChunk> {
 
+    void saveChunkFile(FileChunkSaveContext fileChunkSaveContext);
 }

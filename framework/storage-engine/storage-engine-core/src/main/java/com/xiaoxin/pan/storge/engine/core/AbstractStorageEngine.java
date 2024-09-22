@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Assert;
 import com.xiaoxin.pan.cache.core.constanst.CacheConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.storge.engine.core.context.DeleteFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
 import com.xiaoxin.pan.storge.engine.core.context.StoreFileContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -51,6 +52,39 @@ public abstract class AbstractStorageEngine implements StorageEngine {
         doStore(storeFileContext);
     }
 
+
+    /**
+     * 存储物理文件的分片
+     * 1、参数校验
+     * 2、执行动作
+     */
+    @Override
+    public void storeChunk(StoreFileChunkContext storeFileChunkContext) throws IOException {
+        checkStoreFileChunkContext(storeFileChunkContext);
+        doStoreChunk(storeFileChunkContext);
+    }
+
+    /**
+     * 执行文件分片上传
+     * 下沉到子类去实现
+     * @param storeFileChunkContext
+     */
+    protected abstract void doStoreChunk(StoreFileChunkContext storeFileChunkContext) throws IOException;
+
+    /**
+     * 检查存储物理文件的分片上下文信息
+     * @param storeFileChunkContext
+     */
+    private void checkStoreFileChunkContext(StoreFileChunkContext storeFileChunkContext) {
+        Assert.notBlank(storeFileChunkContext.getFilename(), "文件名称不能为空");
+        Assert.notBlank(storeFileChunkContext.getIdentifier(), "文件唯一标识不能为空");
+        Assert.notNull(storeFileChunkContext.getTotalSize(), "文件大小不能为空");
+        Assert.notNull(storeFileChunkContext.getInputStream(), "文件分片不能为空");
+        Assert.notNull(storeFileChunkContext.getTotalChunks(), "文件分片总数不能为空");
+        Assert.notNull(storeFileChunkContext.getChunkNumber(), "文件分片下标不能为空");
+        Assert.notNull(storeFileChunkContext.getCurrentChunkSize(), "文件分片的大小不能为空");
+        Assert.notNull(storeFileChunkContext.getUserId(), "当前登录用户的ID不能为空");
+    }
 
     /**
      * 校验存储物理文件的上下文信息

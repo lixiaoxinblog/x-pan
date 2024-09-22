@@ -1,6 +1,5 @@
 package com.xiaoxin.pan.server.modules.file.controller;
 
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.google.common.base.Splitter;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.response.R;
@@ -10,13 +9,14 @@ import com.xiaoxin.pan.server.common.utils.UserIdUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
-import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
+import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.po.*;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
+import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
+import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import com.xiaoxin.pan.server.modules.user.controller.UserController;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -141,7 +141,7 @@ public class FileController {
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
-    @PostMapping("/upload")
+    @PostMapping("/secUpload")
     public R secUpload(@Validated @RequestBody SecUploadFilePO secUploadFilePO) {
         UploadFileContext uploadFileContext = fileConverter.uploadFilePO2UploadFileContext(secUploadFilePO);
         boolean result = xPanUserFileService.secUpload(uploadFileContext);
@@ -160,7 +160,7 @@ public class FileController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
-    @PostMapping("file/upload")
+    @PostMapping("/upload")
     public R upload(@Validated FileUploadPO fileUploadPO) {
         FileUploadContext fileUploadContext = fileConverter.fileUploadPO2FileUploadContext(fileUploadPO);
         //todo 添加文件真实后缀
@@ -168,5 +168,38 @@ public class FileController {
         fileUploadContext.setFilename(fileUploadPO.getFilename() + XPanConstants.POINT_STR + fileExtName);
         xPanUserFileService.upload(fileUploadContext);
         return R.success();
+    }
+
+    /**
+     * 文件分片上传
+     */
+    @ApiOperation(
+            value = "文件分片上传",
+            notes = "该接口提供了文件分片上传的功能",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("/chunkUpload")
+    public R<FileChunkUploadVO> chunkUpload(@Validated FileChunkUploadPO fileChunkUploadPO){
+        FileChunkUploadContext fileChunkUploadContext =fileConverter.fileChunkUploadPO2FileChunkUploadContext(fileChunkUploadPO);
+        FileChunkUploadVO fileChunkUploadVO = xPanUserFileService.chunkUpload(fileChunkUploadContext);
+        return R.data(fileChunkUploadVO);
+    }
+
+    /**
+     * 文件分片查询
+     */
+    @ApiOperation(
+            value = "文件分片上传",
+            notes = "该接口提供了文件分片上传的功能",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/chunkUpload")
+    public R<UploadedChunksVO> getUploadedChunks(@Validated QueryUploadedChunksPO queryUploadedChunksPO){
+        QueryUploadedChunksContext context = fileConverter
+                .queryUploadedChunksPO2QueryUploadedChunksContext(queryUploadedChunksPO);
+        UploadedChunksVO uploadedChunksVO =  xPanUserFileService.getUploadedChunks(context);
+        return R.data(uploadedChunksVO);
     }
 }

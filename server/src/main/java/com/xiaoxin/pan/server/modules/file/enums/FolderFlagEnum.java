@@ -1,4 +1,4 @@
-package com.xiaoxin.pan.server.modules.file.enmus;
+package com.xiaoxin.pan.server.modules.file.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
