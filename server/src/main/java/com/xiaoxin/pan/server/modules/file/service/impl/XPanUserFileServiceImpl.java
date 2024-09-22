@@ -9,24 +9,24 @@ import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
-import com.xiaoxin.pan.server.common.envent.DeleteFileEvent;
+import com.xiaoxin.pan.server.common.envent.file.DeleteFileEvent;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
+import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
 import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.enums.FileTypeEnum;
-import com.xiaoxin.pan.server.modules.file.po.SecUploadFilePO;
 import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 import com.xiaoxin.pan.server.modules.file.enmus.FolderFlagEnum;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -47,6 +47,8 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
 
     @Autowired
     private XPanFileService xPanFileService;
+    @Autowired
+    private FileConverter fileConverter;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -148,6 +150,38 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         }
         return false;
     }
+
+    /**
+     * 单文件上传
+     * 1、上传文件并保存实体文件的记录
+     * 2、保存用户文件的关系记录
+     * @param fileUploadContext
+     */
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void upload(FileUploadContext fileUploadContext) {
+        saveFile(fileUploadContext);
+        saveUserFile(fileUploadContext.getParentId(),
+                fileUploadContext.getFilename(),
+                FolderFlagEnum.NO,
+                FileTypeEnum.getFileTypeCode(FileUtils.getFileSuffix(fileUploadContext.getFilename())),
+                fileUploadContext.getRecord().getFileId(),
+                fileUploadContext.getUserId(),
+                fileUploadContext.getRecord().getFileSizeDesc());
+    }
+
+    /**
+     * 上传文件并保存实体文件记录
+     * 委托给实体文件的Service去完成该操作
+     *
+     * @param fileUploadContext
+     */
+    private void saveFile(FileUploadContext fileUploadContext) {
+        FileSaveContext fileSaveContext = fileConverter.fileUploadContext2FileSaveContext(fileUploadContext);
+        xPanFileService.saveFile(fileSaveContext);
+        fileUploadContext.setRecord(fileSaveContext.getRecord());
+    }
+
 
     private List<XPanFile> getFileListByUserIdAndIdentifier(Long userId, String identifier) {
         QueryRealFileListContext queryRealFileListContext = new QueryRealFileListContext();

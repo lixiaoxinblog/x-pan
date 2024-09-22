@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
+import com.xiaoxin.pan.server.modules.file.context.FileSaveContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryRealFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
@@ -16,4 +17,10 @@ import java.util.List;
 public interface XPanFileService extends IService<XPanFile> {
 
     List<XPanFile> getFileList(QueryRealFileListContext queryRealFileListContext);
+
+    /**
+     * 保存文件
+     * @param fileSaveContext
+     */
+    void saveFile(FileSaveContext fileSaveContext);
 }

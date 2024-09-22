@@ -55,7 +55,7 @@ public class XPanFile implements Serializable {
      * 文件预览的响应头Content-Type的值
      */
     @TableField(value = "file_preview_content_type")
-    private String filePreviewContent_type;
+    private String filePreviewContentType;
 
     /**
      * 文件唯一标识

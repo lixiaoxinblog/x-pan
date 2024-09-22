@@ -1,18 +1,17 @@
 package com.xiaoxin.pan.server.modules.file.controller;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.google.common.base.Splitter;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.response.R;
+import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.utils.UserIdUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
 import com.xiaoxin.pan.server.modules.file.enmus.DelFlagEnum;
-import com.xiaoxin.pan.server.modules.file.po.CreateFolderPO;
-import com.xiaoxin.pan.server.modules.file.po.DeleteFilePO;
-import com.xiaoxin.pan.server.modules.file.po.SecUploadFilePO;
-import com.xiaoxin.pan.server.modules.file.po.UpdateFilenamePO;
+import com.xiaoxin.pan.server.modules.file.po.*;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import com.xiaoxin.pan.server.modules.user.controller.UserController;
@@ -146,10 +145,28 @@ public class FileController {
     public R secUpload(@Validated @RequestBody SecUploadFilePO secUploadFilePO) {
         UploadFileContext uploadFileContext = fileConverter.uploadFilePO2UploadFileContext(secUploadFilePO);
         boolean result = xPanUserFileService.secUpload(uploadFileContext);
-        if(result){
+        if (result) {
             return R.success();
         }
         return R.fail("文件唯一表示不存在，请手动执行文件上传");
     }
 
+    /**
+     * 单文件上传
+     */
+    @ApiOperation(
+            value = "单文件上传",
+            notes = "该接口提供了单文件上传的功能",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("file/upload")
+    public R upload(@Validated FileUploadPO fileUploadPO) {
+        FileUploadContext fileUploadContext = fileConverter.fileUploadPO2FileUploadContext(fileUploadPO);
+        //todo 添加文件真实后缀
+        String fileExtName = FileUtils.getFileExtName(fileUploadPO.getFile().getOriginalFilename());
+        fileUploadContext.setFilename(fileUploadPO.getFilename() + XPanConstants.POINT_STR + fileExtName);
+        xPanUserFileService.upload(fileUploadContext);
+        return R.success();
+    }
 }

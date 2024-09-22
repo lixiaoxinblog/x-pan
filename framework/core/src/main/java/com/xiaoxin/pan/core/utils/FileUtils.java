@@ -95,7 +95,6 @@ public class FileUtils {
                 .append(UUIDUtil.getUUID())
                 .append(getFileSuffix(filename))
                 .toString();
-
     }
 
     /**
@@ -134,14 +133,14 @@ public class FileUtils {
     /**
      * 生成默认的文件存储路径
      * <p>
-     * 生成规则：当前登录用户的文件目录 + rpan
+     * 生成规则：当前登录用户的文件目录 + xpan
      *
      * @return
      */
     public static String generateDefaultStoreFileRealPath() {
         return new StringBuffer(System.getProperty("user.home"))
                 .append(File.separator)
-                .append("rpan")
+                .append("xpan")
                 .toString();
     }
 
@@ -153,7 +152,7 @@ public class FileUtils {
     public static String generateDefaultStoreFileChunkRealPath() {
         return new StringBuffer(System.getProperty("user.home"))
                 .append(File.separator)
-                .append("rpan")
+                .append("xpan")
                 .append(File.separator)
                 .append("chunks")
                 .toString();

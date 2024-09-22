@@ -40,3 +40,10 @@ swagger2:
   contact-url: https://my.oschina.net/u/4911024
   contact-email: 2014402458@qq.com
   version: 1.0
+com:
+  xiaoxin:
+    pan:
+      storage:
+        engine:
+          local:
+            root-file-path: F:\xpan\upload

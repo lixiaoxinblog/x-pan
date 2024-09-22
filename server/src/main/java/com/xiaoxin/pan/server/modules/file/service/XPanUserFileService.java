@@ -36,5 +36,16 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      */
     void deleteFile(DeleteFileContext deleteFileContext);
 
+    /**
+     * 文件秒传
+     * @param uploadFileContext
+     * @return
+     */
     boolean secUpload(UploadFileContext uploadFileContext);
+
+    /**
+     * 单文件上传
+     * @param fileUploadContext
+     */
+    void upload(FileUploadContext fileUploadContext);
 }

@@ -1,4 +1,4 @@
-package com.xiaoxin.pan.server.common.envent;
+package com.xiaoxin.pan.server.common.envent.file;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
