@@ -23,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Objects;
@@ -201,5 +202,33 @@ public class FileController {
                 .queryUploadedChunksPO2QueryUploadedChunksContext(queryUploadedChunksPO);
         UploadedChunksVO uploadedChunksVO =  xPanUserFileService.getUploadedChunks(context);
         return R.data(uploadedChunksVO);
+    }
+
+    @ApiOperation(
+            value = "文件分片合并",
+            notes = "该接口提供了文件分片合并的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("/merge")
+    public R mergeFile(@Validated @RequestBody FileChunkMergePO fileChunkMergePO) {
+        FileChunkMergeContext context = fileConverter.fileChunkMergePO2FileChunkMergeContext(fileChunkMergePO);
+        xPanUserFileService.mergeFile(context);
+        return R.success();
+    }
+
+    /**
+     * 文件下载
+     */
+    @ApiOperation(
+            value = "文件下载",
+            notes = "该接口提供了文件下载功能的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("/merge")
+    public void download(@NotBlank(message = "文件ID不能为空") @RequestParam("fileId") String fileId
+            , HttpServletResponse httpServletResponse){
+
     }
 }

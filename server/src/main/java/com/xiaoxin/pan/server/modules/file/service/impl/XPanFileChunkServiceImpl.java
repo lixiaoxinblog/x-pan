@@ -104,7 +104,7 @@ public class XPanFileChunkServiceImpl extends ServiceImpl<XPanFileChunkMapper, X
             StoreFileChunkContext storeFileChunkContext = fileConverter.fileChunkSaveContext2StoreFileChunkContext(fileChunkSaveContext);
             storeFileChunkContext.setInputStream(fileChunkSaveContext.getFile().getInputStream());
             storageEngine.storeChunk(storeFileChunkContext);
-            storeFileChunkContext.setRealPath(storeFileChunkContext.getRealPath());
+            fileChunkSaveContext.setRealPath(storeFileChunkContext.getRealPath());
         } catch (IOException e) {
             e.printStackTrace();
             throw new XPanBusinessException("文件分片上传失败！");

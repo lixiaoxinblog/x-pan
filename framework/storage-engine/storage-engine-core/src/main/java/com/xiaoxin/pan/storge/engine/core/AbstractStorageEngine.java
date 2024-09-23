@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Assert;
 import com.xiaoxin.pan.cache.core.constanst.CacheConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.storge.engine.core.context.DeleteFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.MergeFileContext;
 import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
 import com.xiaoxin.pan.storge.engine.core.context.StoreFileContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +45,6 @@ public abstract class AbstractStorageEngine implements StorageEngine {
     }
 
 
-
-
     @Override
     public void store(StoreFileContext storeFileContext) throws IOException {
         checkStoreFileContext(storeFileContext);
@@ -65,14 +64,46 @@ public abstract class AbstractStorageEngine implements StorageEngine {
     }
 
     /**
+     * 文件分片合并
+     * 1、检查参数
+     * 2、执行动作
+     *
+     * @param mergeFileContext
+     */
+    @Override
+    public void mergeFile(MergeFileContext mergeFileContext) throws IOException {
+        checkMergeFileContext(mergeFileContext);
+        doMergeFile(mergeFileContext);
+    }
+
+    /**
+     * 校验文件合并的上下文信息
+     * @param mergeFileContext
+     */
+    private void checkMergeFileContext(MergeFileContext mergeFileContext) {
+        Assert.notBlank(mergeFileContext.getFilename(), "文件名称不能为空");
+        Assert.notBlank(mergeFileContext.getIdentifier(), "文件唯一标识不能为空");
+        Assert.notNull(mergeFileContext.getUserId(), "当前登录用户的ID不能为空");
+        Assert.notEmpty(mergeFileContext.getRealPathList(), "文件分片列表不能为空");
+    }
+
+    /**
+     * 合并分片，下沉到子类去实现
+     * @param mergeFileContext
+     */
+    protected abstract void doMergeFile(MergeFileContext mergeFileContext) throws IOException;
+
+    /**
      * 执行文件分片上传
      * 下沉到子类去实现
+     *
      * @param storeFileChunkContext
      */
     protected abstract void doStoreChunk(StoreFileChunkContext storeFileChunkContext) throws IOException;
 
     /**
      * 检查存储物理文件的分片上下文信息
+     *
      * @param storeFileChunkContext
      */
     private void checkStoreFileChunkContext(StoreFileChunkContext storeFileChunkContext) {
@@ -88,6 +119,7 @@ public abstract class AbstractStorageEngine implements StorageEngine {
 
     /**
      * 校验存储物理文件的上下文信息
+     *
      * @param storeFileContext
      */
     private void checkStoreFileContext(StoreFileContext storeFileContext) {
@@ -120,7 +152,7 @@ public abstract class AbstractStorageEngine implements StorageEngine {
      * @param deleteFileContext
      */
     private void checkDeleteFileContext(DeleteFileContext deleteFileContext) {
-        Assert.notEmpty(deleteFileContext.getRealFilePathList(),"要删除的文件路径列表不能为空！");
+        Assert.notEmpty(deleteFileContext.getRealFilePathList(), "要删除的文件路径列表不能为空！");
 
     }
 }

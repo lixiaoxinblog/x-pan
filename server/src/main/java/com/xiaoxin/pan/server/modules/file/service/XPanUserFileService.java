@@ -64,4 +64,10 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @return
      */
     UploadedChunksVO getUploadedChunks(QueryUploadedChunksContext queryUploadedChunksContext);
+
+    /**
+     * 文件分片合并
+     * @param fileChunkMergeContext
+     */
+    void mergeFile(FileChunkMergeContext fileChunkMergeContext);
 }

@@ -212,6 +212,33 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         uploadedChunksVO.setUploadedChunks(uploadedChunks);
         return uploadedChunksVO;
     }
+    /**
+     * 文件分片合并
+     * 1、文件分片物理合并
+     * 2、保存文件实体记录
+     * 3、保存文件用户关系映射
+     */
+    @Override
+    public void mergeFile(FileChunkMergeContext fileChunkMergeContext) {
+        mergeFileChunkAndSaveFile(fileChunkMergeContext);
+        saveUserFile(fileChunkMergeContext.getParentId(),
+                fileChunkMergeContext.getFilename(),
+                FolderFlagEnum.NO,
+                FileTypeEnum.getFileTypeCode(FileUtils.getFileSuffix(fileChunkMergeContext.getFilename())),
+                fileChunkMergeContext.getRecord().getFileId(),
+                fileChunkMergeContext.getUserId(),
+                fileChunkMergeContext.getRecord().getFileSizeDesc());
+    }
+
+    /**
+     * 合并文件分片并保存物理文件记录
+     */
+    private void mergeFileChunkAndSaveFile(FileChunkMergeContext fileChunkMergeContext) {
+        FileChunkMergeAndSaveContext fileChunkMergeAndSaveContext = fileConverter
+                .fileChunkMergeContext2FileChunkMergeAndSaveContext(fileChunkMergeContext);
+        xPanFileService.mergeFileChunkAndSaveFile(fileChunkMergeAndSaveContext);
+        fileChunkMergeContext.setRecord(fileChunkMergeAndSaveContext.getRecord());
+    }
 
     /**
      * 上传文件并保存实体文件记录

@@ -43,4 +43,11 @@ public interface FileConverter {
 
     @Mapping(target = "userId", expression = "java(com.xiaoxin.pan.server.common.utils.UserIdUtil.get())")
     QueryUploadedChunksContext queryUploadedChunksPO2QueryUploadedChunksContext(QueryUploadedChunksPO queryUploadedChunksPO);
+
+    @Mapping(target = "userId", expression = "java(com.xiaoxin.pan.server.common.utils.UserIdUtil.get())")
+    @Mapping(target = "parentId", expression = "java(com.xiaoxin.pan.core.utils.IdUtil.decrypt(fileChunkMergePO.getParentId()))")
+    FileChunkMergeContext fileChunkMergePO2FileChunkMergeContext(FileChunkMergePO fileChunkMergePO);
+
+    FileChunkMergeAndSaveContext fileChunkMergeContext2FileChunkMergeAndSaveContext(FileChunkMergeContext context);
+
 }

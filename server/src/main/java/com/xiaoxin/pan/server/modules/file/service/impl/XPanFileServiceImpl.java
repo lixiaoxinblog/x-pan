@@ -1,21 +1,28 @@
 package com.xiaoxin.pan.server.modules.file.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Lists;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.envent.log.ErrorLogEvent;
+import com.xiaoxin.pan.server.modules.file.context.FileChunkMergeAndSaveContext;
 import com.xiaoxin.pan.server.modules.file.context.FileSaveContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryRealFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
+import com.xiaoxin.pan.server.modules.file.entity.XPanFileChunk;
+import com.xiaoxin.pan.server.modules.file.service.XPanFileChunkService;
 import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanFileMapper;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import com.xiaoxin.pan.storge.engine.core.StorageEngine;
 import com.xiaoxin.pan.storge.engine.core.context.DeleteFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.MergeFileContext;
 import com.xiaoxin.pan.storge.engine.core.context.StoreFileContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +31,8 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author xiaoxin
@@ -43,6 +48,9 @@ public class XPanFileServiceImpl extends ServiceImpl<XPanFileMapper, XPanFile>
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private XPanFileChunkService xPanFileChunkService;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -85,6 +93,63 @@ public class XPanFileServiceImpl extends ServiceImpl<XPanFileMapper, XPanFile>
     }
 
 
+    /**
+     * 合并分片并保存文件实体记录
+     * 1、委托文件存储引擎合并文件分片
+     * 2、保存物理文件记录
+     *
+     * @param fileChunkMergeAndSaveContext
+     */
+    @Override
+    public void mergeFileChunkAndSaveFile(FileChunkMergeAndSaveContext fileChunkMergeAndSaveContext) {
+        doMergeFileChunk(fileChunkMergeAndSaveContext);
+        XPanFile xPanFile = doSaveFile(
+                fileChunkMergeAndSaveContext.getFilename(),
+                fileChunkMergeAndSaveContext.getRealPath(),
+                fileChunkMergeAndSaveContext.getTotalSize(),
+                fileChunkMergeAndSaveContext.getIdentifier(),
+                fileChunkMergeAndSaveContext.getUserId()
+        );
+        fileChunkMergeAndSaveContext.setRecord(xPanFile);
+    }
+
+    /**
+     * 委托文件存储引擎合并文件分片
+     * 1、查询文件分片的记录
+     * 2、根据文件分片的记录去合并物理文件
+     * 3、删除文件分片记录
+     * 4、封装合并文件的真实存储路径到上下文信息中
+     *
+     * @param context
+     */
+    private void doMergeFileChunk(FileChunkMergeAndSaveContext context) {
+        QueryWrapper<XPanFileChunk> queryWrapper = Wrappers.query();
+        queryWrapper.eq("identifier", context.getIdentifier());
+        queryWrapper.eq("create_user", context.getUserId());
+        queryWrapper.ge("expiration_time", new Date());
+        List<XPanFileChunk> listFileChunk = xPanFileChunkService.list(queryWrapper);
+        if (CollectionUtils.isEmpty(listFileChunk)) {
+            throw new XPanBusinessException("该文件未找到分片记录");
+        }
+        List<String> realPathList = listFileChunk.stream()
+                .sorted(Comparator.comparing(XPanFileChunk::getChunkNumber))
+                .map(XPanFileChunk::getRealPath)
+                .collect(Collectors.toList());
+        MergeFileContext mergeFileContext = new MergeFileContext();
+        mergeFileContext.setFilename(context.getFilename());
+        mergeFileContext.setIdentifier(context.getIdentifier());
+        mergeFileContext.setUserId(context.getUserId());
+        mergeFileContext.setRealPathList(realPathList);
+        try {
+            storageEngine.mergeFile(mergeFileContext);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new XPanBusinessException("文件分片合并失败");
+        }
+        context.setRealPath(mergeFileContext.getRealPath());
+        List<Long> fileChunkRecordIdList = listFileChunk.stream().map(XPanFileChunk::getId).collect(Collectors.toList());
+        xPanFileChunkService.removeByIds(fileChunkRecordIdList);
+    }
 
     /**
      * 保存文件实体记录
@@ -105,7 +170,7 @@ public class XPanFileServiceImpl extends ServiceImpl<XPanFileMapper, XPanFile>
                 storageEngine.delete(deleteFileContext);
             } catch (IOException e) {
                 e.printStackTrace();
-                ErrorLogEvent errorLogEvent = new ErrorLogEvent(this,"文件物理删除失败，请执行手动删除！文件路径:"+realPath,userId);
+                ErrorLogEvent errorLogEvent = new ErrorLogEvent(this, "文件物理删除失败，请执行手动删除！文件路径:" + realPath, userId);
                 applicationContext.publishEvent(errorLogEvent);
             }
         }
