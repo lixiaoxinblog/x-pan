@@ -41,6 +41,14 @@ public interface FileConstants {
      * 以附件的方式下载
      */
     String CONTENT_DISPOSITION_VALUE_PREFIX_STR = "attachment;fileName=";
+    /**
+     *  Content-Range 头
+     */
+    String CONTENT_RANGE_STR = "Content-Range";
+    /**
+     * Accept-Ranges
+     */
+    String ACCEPT_RANGES_STR = "Accept-Ranges";
 
     String GB2312_STR = "GB2312";
 

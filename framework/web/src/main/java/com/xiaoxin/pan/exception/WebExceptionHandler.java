@@ -45,6 +45,7 @@ public class WebExceptionHandler {
 
     @ExceptionHandler(value = IllegalStateException.class)
     public R illegalStateExceptionHandler(IllegalStateException e) {
+        e.printStackTrace();
         return R.fail(ResponseCode.ERROR_PARAM);
     }
 
@@ -61,7 +62,7 @@ public class WebExceptionHandler {
 
     @ExceptionHandler(value = RuntimeException.class)
     public R runtimeExceptionHandler(RuntimeException e) {
-        e.getStackTrace();
+        e.printStackTrace();
         return R.fail(ResponseCode.ERROR.getCode(), e.getMessage());
     }
 

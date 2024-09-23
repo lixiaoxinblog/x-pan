@@ -76,4 +76,16 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @param fileDownloadContext
      */
     void download(FileDownloadContext fileDownloadContext);
+
+    /**
+     * 文件预览
+     * @param filePreviewContext
+     */
+    void preview(FilePreviewContext filePreviewContext);
+
+    /**
+     * 播放音视频
+     * @param fileRangeContext
+     */
+    String playVideoAndAudio(FileRangeContext fileRangeContext);
 }

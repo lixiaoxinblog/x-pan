@@ -44,4 +44,9 @@ public interface StorageEngine {
      * @param readFileContext
      */
     void realFile(ReadFileContext readFileContext) throws IOException;
+
+    /**
+     * 指定文件范围读取文件内容写入到输出流中
+     */
+    void rangeFile(ReadRangeFileContext readRangeFileContext) throws IOException;
 }

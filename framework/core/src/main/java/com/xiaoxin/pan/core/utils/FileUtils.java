@@ -212,6 +212,21 @@ public class FileUtils {
         outputStream.close();
         fileChannel.close();
         writableByteChannel.close();
+//        writeStream2StreamRange(fileInputStream, outputStream, XPanConstants.ZERO_LONG, length);
+    }
+
+    /**
+     * 利用零拷贝技术读取文件内容并写入到文件的输出流中
+     */
+    public static void writeStream2StreamRange(FileInputStream fileInputStream, OutputStream outputStream,Long start,Long end) throws IOException {
+        FileChannel fileChannel = fileInputStream.getChannel();
+        WritableByteChannel writableByteChannel = Channels.newChannel(outputStream);
+        fileChannel.transferTo(start,end - start + 1,writableByteChannel);
+        outputStream.flush();
+        fileInputStream.close();
+        outputStream.close();
+        fileChannel.close();
+        writableByteChannel.close();
     }
 
     /**

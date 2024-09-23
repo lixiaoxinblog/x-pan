@@ -69,8 +69,8 @@ public class LocalStorageEngine extends AbstractStorageEngine {
         String realFilePaths = FileUtils.generateStoreFileRealPath(basePath, mergeFileContext.getFilename());
         FileUtils.createFile(new File(realFilePaths));
         List<String> chunkPaths = mergeFileContext.getRealPathList();
-        for (String chunkPath : chunkPaths ) {
-            FileUtils.appendWrite(Paths.get(realFilePaths),new File(chunkPath).toPath());
+        for (String chunkPath : chunkPaths) {
+            FileUtils.appendWrite(Paths.get(realFilePaths), new File(chunkPath).toPath());
         }
         FileUtils.deleteFiles(chunkPaths);
         mergeFileContext.setRealPath(realFilePaths);
@@ -78,11 +78,24 @@ public class LocalStorageEngine extends AbstractStorageEngine {
 
     /**
      * 执行读取文件动作
+     *
      * @param readFileContext
      */
     @Override
     public void doRealFile(ReadFileContext readFileContext) throws IOException {
         File file = new File(readFileContext.getRealPath());
         FileUtils.writeFile2OutputStream(new FileInputStream(file), readFileContext.getOutputStream(), file.length());
+    }
+
+    /**
+     * 执行指定位置读取文件动作
+     *
+     * @param readRangeFileContext
+     */
+    @Override
+    public void doRangeFile(ReadRangeFileContext readRangeFileContext) throws IOException {
+        File file = new File(readRangeFileContext.getRealPath());
+        FileUtils.writeStream2StreamRange(new FileInputStream(file)
+                , readRangeFileContext.getOutputStream(), readRangeFileContext.getStart(), readRangeFileContext.getEnd());
     }
 }

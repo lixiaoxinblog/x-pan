@@ -19,10 +19,13 @@ import com.xiaoxin.pan.server.modules.user.controller.UserController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
@@ -181,8 +184,8 @@ public class FileController {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     @PostMapping("/chunkUpload")
-    public R<FileChunkUploadVO> chunkUpload(@Validated FileChunkUploadPO fileChunkUploadPO){
-        FileChunkUploadContext fileChunkUploadContext =fileConverter.fileChunkUploadPO2FileChunkUploadContext(fileChunkUploadPO);
+    public R<FileChunkUploadVO> chunkUpload(@Validated FileChunkUploadPO fileChunkUploadPO) {
+        FileChunkUploadContext fileChunkUploadContext = fileConverter.fileChunkUploadPO2FileChunkUploadContext(fileChunkUploadPO);
         FileChunkUploadVO fileChunkUploadVO = xPanUserFileService.chunkUpload(fileChunkUploadContext);
         return R.data(fileChunkUploadVO);
     }
@@ -197,10 +200,10 @@ public class FileController {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     @GetMapping("/chunkUpload")
-    public R<UploadedChunksVO> getUploadedChunks(@Validated QueryUploadedChunksPO queryUploadedChunksPO){
+    public R<UploadedChunksVO> getUploadedChunks(@Validated QueryUploadedChunksPO queryUploadedChunksPO) {
         QueryUploadedChunksContext context = fileConverter
                 .queryUploadedChunksPO2QueryUploadedChunksContext(queryUploadedChunksPO);
-        UploadedChunksVO uploadedChunksVO =  xPanUserFileService.getUploadedChunks(context);
+        UploadedChunksVO uploadedChunksVO = xPanUserFileService.getUploadedChunks(context);
         return R.data(uploadedChunksVO);
     }
 
@@ -228,11 +231,52 @@ public class FileController {
     )
     @GetMapping("/download")
     public void download(@NotBlank(message = "文件ID不能为空") @RequestParam("fileId") String fileId
-            , HttpServletResponse httpServletResponse){
+            , HttpServletResponse httpServletResponse) {
         FileDownloadContext fileDownloadContext = new FileDownloadContext();
         fileDownloadContext.setFileId(IdUtil.decrypt(fileId));
         fileDownloadContext.setResponse(httpServletResponse);
         fileDownloadContext.setUserId(UserIdUtil.get());
         xPanUserFileService.download(fileDownloadContext);
+    }
+
+    /**
+     * 文件预览
+     */
+    @ApiOperation(
+            value = "文件预览",
+            notes = "该接口提供了文件预览功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/preview")
+    public void preview(@NotBlank(message = "文件ID不能为空") @RequestParam("fileId") String fileId,
+                        HttpServletResponse httpServletResponse) {
+        FilePreviewContext filePreviewContext = new FilePreviewContext();
+        filePreviewContext.setResponse(httpServletResponse);
+        filePreviewContext.setFileId(IdUtil.decrypt(fileId));
+        filePreviewContext.setUserId(UserIdUtil.get());
+        xPanUserFileService.preview(filePreviewContext);
+    }
+
+    /**
+     * 播放视频和音频
+     */
+    @ApiOperation(
+            value = "播放音频视频",
+            notes = "该接口提供了文件预览功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/player")
+    public ResponseEntity<FileSystemResource> playVideoAndAudio(@RequestHeader(value = "Range", required = false) String range,
+                                                                @RequestParam("fileId") String fileId,
+                                                                HttpServletResponse response) {
+        FileRangeContext fileRangeContext = new FileRangeContext();
+        fileRangeContext.setFileId(IdUtil.decrypt(fileId));
+        fileRangeContext.setResponse(response);
+        fileRangeContext.setUserId(UserIdUtil.get());
+        fileRangeContext.setRange(range);
+        String filePath = xPanUserFileService.playVideoAndAudio(fileRangeContext);
+        return ResponseEntity.status(response.getStatus()).body(new FileSystemResource(filePath));
     }
 }

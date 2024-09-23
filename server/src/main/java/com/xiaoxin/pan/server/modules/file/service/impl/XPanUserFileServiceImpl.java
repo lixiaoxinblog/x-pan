@@ -31,15 +31,21 @@ import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import com.xiaoxin.pan.storage.engine.local.LocalStorageEngine;
 import com.xiaoxin.pan.storge.engine.core.StorageEngine;
 import com.xiaoxin.pan.storge.engine.core.context.ReadFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.ReadRangeFileContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import com.xiaoxin.pan.server.modules.file.enums.FolderFlagEnum;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Date;
@@ -262,6 +268,122 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     }
 
     /**
+     * 文件预览
+     * 1、参数校验：校验文件是否存在，文件是否属于该用户
+     * 2、校验该文件是不是一个文件夹
+     * 3、执行预览的动作
+     *
+     * @param filePreviewContext
+     */
+    @Override
+    public void preview(FilePreviewContext filePreviewContext) {
+        XPanUserFile xPanUserFile = getById(filePreviewContext.getFileId());
+        checkOperatePermission(xPanUserFile, filePreviewContext.getUserId());
+        if (checkIsFolder(xPanUserFile)) {
+            throw new XPanBusinessException("文件夹暂不支持预览");
+        }
+        doPreview(xPanUserFile, filePreviewContext);
+    }
+
+
+    /**
+     * 音频视频播放
+     * 1、参数校验：校验文件是否存在，文件是否属于该用户
+     * 2、校验该文件是不是一个文件夹
+     * 3、执行播放动作
+     *
+     * @param fileRangeContext
+     */
+    @Override
+    public String playVideoAndAudio(FileRangeContext fileRangeContext) {
+        XPanUserFile xPanUserFile = getById(fileRangeContext.getFileId());
+        checkOperatePermission(xPanUserFile, fileRangeContext.getUserId());
+        if (checkIsFolder(xPanUserFile)) {
+            throw new XPanBusinessException("文件夹暂不支持播放");
+        }
+        return doPlayer(xPanUserFile, fileRangeContext);
+    }
+
+    /**
+     * 执行播放动作
+     *
+     * @param xPanUserFile
+     * @param fileRangeContext
+     */
+    private String doPlayer(XPanUserFile xPanUserFile, FileRangeContext fileRangeContext) {
+        XPanFile xPanFile = xPanFileService.getById(xPanUserFile.getRealFileId());
+        if (Objects.isNull(xPanFile)) {
+            throw new XPanBusinessException("当前文件记录不存在!");
+        }
+        addRangeResponseHeader(fileRangeContext,xPanFile);
+        realFile2OutputStreamRange(xPanFile.getRealPath(), fileRangeContext);
+        return xPanFile.getRealPath();
+    }
+
+
+    /**
+     * 执行文件预览
+     * 1.判断是否是音频视频文件
+     * a.音频视频文件请求投设置为Range
+     *
+     * @param xPanUserFile
+     * @param filePreviewContext
+     */
+    private void doPreview(XPanUserFile xPanUserFile, FilePreviewContext filePreviewContext) {
+        XPanFile xPanFile = xPanFileService.getById(xPanUserFile.getRealFileId());
+        if (Objects.isNull(xPanFile)) {
+            throw new XPanBusinessException("当前文件记录不存在!");
+        }
+        addCommonResponseHeader(filePreviewContext.getResponse(), xPanFile.getFilePreviewContentType());
+        realFile2OutputStream(xPanFile.getRealPath(), filePreviewContext.getResponse());
+    }
+
+    /**
+     * 委托文件存储引擎去范围读取文件内容并写入到输出流中
+     *
+     * @param realPath
+     * @param fileRangeContext
+     */
+    private void realFile2OutputStreamRange(String realPath, FileRangeContext fileRangeContext) {
+        try {
+            ReadRangeFileContext readRangeFileContext = new ReadRangeFileContext();
+            readRangeFileContext.setOutputStream(fileRangeContext.getResponse().getOutputStream());
+            readRangeFileContext.setRealPath(realPath);
+            readRangeFileContext.setStart(fileRangeContext.getStart());
+            readRangeFileContext.setEnd(fileRangeContext.getEnd());
+            storageEngine.rangeFile(readRangeFileContext);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 添加Range响应头
+     */
+    private void addRangeResponseHeader(FileRangeContext fileRangeContext, XPanFile xPanFile) {
+        long start, end, fileSize = Long.parseLong(xPanFile.getFileSize());
+        String range = fileRangeContext.getRange();
+        if (Objects.isNull(range)) {
+            // 如果没有指定范围，则从头开始读取整个文件
+            start = 0;
+            end = fileSize - 1;
+            fileRangeContext.getResponse().setStatus(HttpStatus.OK.value());
+        } else {
+            // 解析 Range 头部信息
+            start = Long.parseLong(range.substring(range.indexOf("=") + 1, range.indexOf("-")));
+            end = (range.endsWith("-")) ? fileSize - 1 : Long.parseLong(range.substring(range.indexOf("-") + 1));
+            fileRangeContext.getResponse().setStatus(HttpStatus.PARTIAL_CONTENT.value());
+        }
+        // 设置 Content-Range 头
+        fileRangeContext.getResponse().setHeader(FileConstants.CONTENT_RANGE_STR, "bytes " + start + "-" + end + "/" + fileSize);
+        fileRangeContext.getResponse().setHeader(FileConstants.ACCEPT_RANGES_STR, "bytes");
+/*        fileRangeContext.getResponse().setContentType("video/mp4");
+        fileRangeContext.getResponse().setContentLengthLong(end - start + 1);*/
+        fileRangeContext.setStart(start);
+        fileRangeContext.setEnd(end);
+    }
+
+    /**
      * 执行下载文件
      *
      * @param xPanUserFile
@@ -279,6 +401,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
 
     /**
      * 委托文件存储引擎去读取文件内容并写入到输出流中
+     *
      * @param realPath
      * @param response
      */
@@ -304,7 +427,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         try {
             response.addHeader(FileConstants.CONTENT_DISPOSITION_STR
                     , FileConstants.CONTENT_DISPOSITION_VALUE_PREFIX_STR +
-                            new String(xPanUserFile.getFilename().getBytes(FileConstants.GB2312_STR),FileConstants.IOS_8859_1_STR));
+                            new String(xPanUserFile.getFilename().getBytes(FileConstants.GB2312_STR), FileConstants.IOS_8859_1_STR));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             throw new XPanBusinessException("文件下载失败");

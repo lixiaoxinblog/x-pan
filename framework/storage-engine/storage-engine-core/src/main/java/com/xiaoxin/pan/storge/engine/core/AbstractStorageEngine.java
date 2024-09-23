@@ -181,4 +181,23 @@ public abstract class AbstractStorageEngine implements StorageEngine {
      * @param readFileContext
      */
     public abstract void doRealFile(ReadFileContext readFileContext) throws IOException;
+
+    @Override
+    public void rangeFile(ReadRangeFileContext readRangeFileContext) throws IOException {
+        checkReadRangeFileContext(readRangeFileContext);
+        doRangeFile(readRangeFileContext);
+    }
+
+    private void checkReadRangeFileContext(ReadRangeFileContext readRangeFileContext) {
+        Assert.notBlank(readRangeFileContext.getRealPath(), "文件真实存储路径不能为空");
+        Assert.notNull(readRangeFileContext.getOutputStream(), "文件的输出流不能为空");
+        Assert.notNull(readRangeFileContext.getStart(), "文件的开始位置不能为空");
+        Assert.notNull(readRangeFileContext.getEnd(), "文件的结束位置不能为空");
+    }
+
+    /**
+     * 下层到子类去实现
+     * @param readRangeFileContext
+     */
+    public abstract void doRangeFile(ReadRangeFileContext readRangeFileContext) throws IOException;
 }
