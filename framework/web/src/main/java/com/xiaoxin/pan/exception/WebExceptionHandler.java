@@ -61,6 +61,7 @@ public class WebExceptionHandler {
 
     @ExceptionHandler(value = RuntimeException.class)
     public R runtimeExceptionHandler(RuntimeException e) {
+        e.getStackTrace();
         return R.fail(ResponseCode.ERROR.getCode(), e.getMessage());
     }
 

@@ -1,9 +1,7 @@
 package com.xiaoxin.pan.storge.engine.core;
 
 
-import com.xiaoxin.pan.storge.engine.core.context.DeleteFileContext;
-import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
-import com.xiaoxin.pan.storge.engine.core.context.StoreFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.*;
 
 import java.io.IOException;
 
@@ -34,4 +32,16 @@ public interface StorageEngine {
      * @throws IOException
      */
     void storeChunk(StoreFileChunkContext storeFileChunkContext) throws IOException;
+
+    /**
+     * 文件分片合并
+     * @param mergeFileContext
+     */
+    void mergeFile(MergeFileContext mergeFileContext) throws IOException;
+
+    /**
+     * 读取文件内容写入到输出流中
+     * @param readFileContext
+     */
+    void realFile(ReadFileContext readFileContext) throws IOException;
 }

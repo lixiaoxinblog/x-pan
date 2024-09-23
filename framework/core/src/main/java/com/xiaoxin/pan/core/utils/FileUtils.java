@@ -206,7 +206,7 @@ public class FileUtils {
     public static void writeFile2OutputStream(FileInputStream fileInputStream, OutputStream outputStream, long length) throws IOException {
         FileChannel fileChannel = fileInputStream.getChannel();
         WritableByteChannel writableByteChannel = Channels.newChannel(outputStream);
-        fileChannel.transferTo(XPanConstants.ZERO_LONG, length, writableByteChannel);
+        fileChannel.transferTo(XPanConstants.ZERO_LONG,length,writableByteChannel);
         outputStream.flush();
         fileInputStream.close();
         outputStream.close();

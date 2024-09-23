@@ -226,9 +226,13 @@ public class FileController {
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
-    @PostMapping("/merge")
+    @GetMapping("/download")
     public void download(@NotBlank(message = "文件ID不能为空") @RequestParam("fileId") String fileId
             , HttpServletResponse httpServletResponse){
-
+        FileDownloadContext fileDownloadContext = new FileDownloadContext();
+        fileDownloadContext.setFileId(IdUtil.decrypt(fileId));
+        fileDownloadContext.setResponse(httpServletResponse);
+        fileDownloadContext.setUserId(UserIdUtil.get());
+        xPanUserFileService.download(fileDownloadContext);
     }
 }

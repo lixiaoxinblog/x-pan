@@ -70,4 +70,10 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @param fileChunkMergeContext
      */
     void mergeFile(FileChunkMergeContext fileChunkMergeContext);
+
+    /**
+     * 文件下载
+     * @param fileDownloadContext
+     */
+    void download(FileDownloadContext fileDownloadContext);
 }

@@ -6,11 +6,13 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sun.deploy.net.HttpUtils;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.envent.file.DeleteFileEvent;
+import com.xiaoxin.pan.server.common.utils.HttpUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
@@ -26,13 +28,20 @@ import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
 import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
 import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.storage.engine.local.LocalStorageEngine;
+import com.xiaoxin.pan.storge.engine.core.StorageEngine;
+import com.xiaoxin.pan.storge.engine.core.context.ReadFileContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import com.xiaoxin.pan.server.modules.file.enums.FolderFlagEnum;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -56,6 +65,8 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     private FileConverter fileConverter;
     @Autowired
     private XPanFileChunkService xPanFileChunkService;
+    @Autowired
+    private StorageEngine storageEngine;
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
@@ -162,6 +173,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
      * 单文件上传
      * 1、上传文件并保存实体文件的记录
      * 2、保存用户文件的关系记录
+     *
      * @param fileUploadContext
      */
     @Transactional(rollbackFor = Exception.class)
@@ -204,14 +216,15 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     public UploadedChunksVO getUploadedChunks(QueryUploadedChunksContext queryUploadedChunksContext) {
         QueryWrapper<XPanFileChunk> queryWrapper = new QueryWrapper<>();
         queryWrapper.select("chunk_number");
-        queryWrapper.eq("identifier",queryUploadedChunksContext.getIdentifier());
-        queryWrapper.eq("create_user",queryUploadedChunksContext.getUserId());
-        queryWrapper.gt("expiration_time",new Date());
-        List<Integer> uploadedChunks = xPanFileChunkService.listObjs(queryWrapper,value ->(Integer) value);
+        queryWrapper.eq("identifier", queryUploadedChunksContext.getIdentifier());
+        queryWrapper.eq("create_user", queryUploadedChunksContext.getUserId());
+        queryWrapper.gt("expiration_time", new Date());
+        List<Integer> uploadedChunks = xPanFileChunkService.listObjs(queryWrapper, value -> (Integer) value);
         UploadedChunksVO uploadedChunksVO = new UploadedChunksVO();
         uploadedChunksVO.setUploadedChunks(uploadedChunks);
         return uploadedChunksVO;
     }
+
     /**
      * 文件分片合并
      * 1、文件分片物理合并
@@ -228,6 +241,118 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
                 fileChunkMergeContext.getRecord().getFileId(),
                 fileChunkMergeContext.getUserId(),
                 fileChunkMergeContext.getRecord().getFileSizeDesc());
+    }
+
+    /**
+     * 文件下载
+     * 1、参数校验：校验文件是否存在，文件是否属于该用户
+     * 2、校验该文件是不是一个文件夹
+     * 3、执行下载的动作
+     *
+     * @param fileDownloadContext
+     */
+    @Override
+    public void download(FileDownloadContext fileDownloadContext) {
+        XPanUserFile xPanUserFile = getById(fileDownloadContext.getFileId());
+        checkOperatePermission(xPanUserFile, fileDownloadContext.getUserId());
+        if (checkIsFolder(xPanUserFile)) {
+            throw new XPanBusinessException("文件夹暂不支持下载");
+        }
+        doDownload(xPanUserFile, fileDownloadContext.getResponse());
+    }
+
+    /**
+     * 执行下载文件
+     *
+     * @param xPanUserFile
+     * @param response
+     */
+    private void doDownload(XPanUserFile xPanUserFile, HttpServletResponse response) {
+        XPanFile xPanFile = xPanFileService.getById(xPanUserFile.getRealFileId());
+        if (Objects.isNull(xPanFile)) {
+            throw new XPanBusinessException("当前文件记录不存在!");
+        }
+        addCommonResponseHeader(response, MediaType.APPLICATION_OCTET_STREAM_VALUE);
+        addDownloadAttribute(response, xPanUserFile, xPanFile);
+        realFile2OutputStream(xPanFile.getRealPath(), response);
+    }
+
+    /**
+     * 委托文件存储引擎去读取文件内容并写入到输出流中
+     * @param realPath
+     * @param response
+     */
+    private void realFile2OutputStream(String realPath, HttpServletResponse response) {
+        try {
+            ReadFileContext readFileContext = new ReadFileContext();
+            readFileContext.setOutputStream(response.getOutputStream());
+            readFileContext.setRealPath(realPath);
+            storageEngine.realFile(readFileContext);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 添加文件下载的属性信息
+     *
+     * @param response
+     * @param xPanUserFile
+     * @param xPanFile
+     */
+    private void addDownloadAttribute(HttpServletResponse response, XPanUserFile xPanUserFile, XPanFile xPanFile) {
+        try {
+            response.addHeader(FileConstants.CONTENT_DISPOSITION_STR
+                    , FileConstants.CONTENT_DISPOSITION_VALUE_PREFIX_STR +
+                            new String(xPanUserFile.getFilename().getBytes(FileConstants.GB2312_STR),FileConstants.IOS_8859_1_STR));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            throw new XPanBusinessException("文件下载失败");
+        }
+        response.setContentLengthLong(Long.parseLong(xPanFile.getFileSize()));
+    }
+
+    /**
+     * 添加下载响应头
+     *
+     * @param response
+     * @param contentTypeValue
+     */
+    private void addCommonResponseHeader(HttpServletResponse response, String contentTypeValue) {
+        response.reset();
+        HttpUtil.addCorsResponseHeaders(response);
+        response.addHeader(FileConstants.CONTENT_TYPE_STR, contentTypeValue);
+        response.setContentType(contentTypeValue);
+    }
+
+    /**
+     * 校验文件是否是个文件夹
+     *
+     * @param xPanUserFile
+     * @return
+     */
+
+    private boolean checkIsFolder(XPanUserFile xPanUserFile) {
+        if (Objects.isNull(xPanUserFile)) {
+            throw new XPanBusinessException("当前文件记录不存在!");
+        }
+        return FolderFlagEnum.YES.getCode().equals(xPanUserFile.getDelFlag());
+    }
+
+    /**
+     * 校验文件操作权限
+     *
+     * @param xPanUserFile
+     * @param userId
+     */
+    private void checkOperatePermission(XPanUserFile xPanUserFile, Long userId) {
+        if (Objects.isNull(xPanUserFile)) {
+            throw new XPanBusinessException("该文件不存在");
+        }
+        if (!xPanUserFile.getUserId().equals(userId)) {
+            throw new XPanBusinessException("您没有该文件权限！");
+        }
+
     }
 
     /**

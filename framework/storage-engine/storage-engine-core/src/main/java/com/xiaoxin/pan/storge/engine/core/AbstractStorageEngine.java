@@ -3,10 +3,7 @@ package com.xiaoxin.pan.storge.engine.core;
 import cn.hutool.core.lang.Assert;
 import com.xiaoxin.pan.cache.core.constanst.CacheConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
-import com.xiaoxin.pan.storge.engine.core.context.DeleteFileContext;
-import com.xiaoxin.pan.storge.engine.core.context.MergeFileContext;
-import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
-import com.xiaoxin.pan.storge.engine.core.context.StoreFileContext;
+import com.xiaoxin.pan.storge.engine.core.context.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -153,6 +150,35 @@ public abstract class AbstractStorageEngine implements StorageEngine {
      */
     private void checkDeleteFileContext(DeleteFileContext deleteFileContext) {
         Assert.notEmpty(deleteFileContext.getRealFilePathList(), "要删除的文件路径列表不能为空！");
-
     }
+
+
+    /**
+     * 读取文件内容写入到输出流中
+     * 1、参数校验
+     * 2、执行动作
+     *
+     * @param readFileContext
+     * @throws IOException
+     */
+    @Override
+    public void realFile(ReadFileContext readFileContext) throws IOException {
+        checkReadFileContext(readFileContext);
+        doRealFile(readFileContext);
+    }
+
+    /**
+     * 校验读取文件上下文信息
+     * @param readFileContext
+     */
+    private void checkReadFileContext(ReadFileContext readFileContext) {
+        Assert.notBlank(readFileContext.getRealPath(), "文件真实存储路径不能为空");
+        Assert.notNull(readFileContext.getOutputStream(), "文件的输出流不能为空");
+    }
+
+    /**
+     * 下层到子类去实现
+     * @param readFileContext
+     */
+    public abstract void doRealFile(ReadFileContext readFileContext) throws IOException;
 }
