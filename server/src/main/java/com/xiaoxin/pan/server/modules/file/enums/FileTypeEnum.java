@@ -45,7 +45,7 @@ public enum FileTypeEnum {
         return StringUtils.isNotBlank(fileSuffix) && matchFileSuffixes.contains(fileSuffix);
     }),
     AUDIO_FILE(8, "AUDIO_FILE", 8, fileSuffix -> {
-        List<String> matchFileSuffixes = Arrays.asList(".mp3", ".mkv", ".mpg", ".rm", ".wma");
+        List<String> matchFileSuffixes = Arrays.asList(".mp3",".flac", ".mkv", ".mpg", ".rm", ".wma");
         return StringUtils.isNotBlank(fileSuffix) && matchFileSuffixes.contains(fileSuffix);
     }),
     VIDEO_FILE(9, "VIDEO_FILE", 9, fileSuffix -> {

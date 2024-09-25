@@ -16,6 +16,7 @@ import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryRealFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFile;
 import com.xiaoxin.pan.server.modules.file.entity.XPanFileChunk;
+import com.xiaoxin.pan.server.modules.file.enums.FileSuffixContextTypeEnum;
 import com.xiaoxin.pan.server.modules.file.service.XPanFileChunkService;
 import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanFileMapper;
@@ -195,6 +196,8 @@ public class XPanFileServiceImpl extends ServiceImpl<XPanFileMapper, XPanFile>
         record.setFileSize(String.valueOf(totalSize));
         record.setFileSizeDesc(FileUtils.byteCountToDisplaySize(totalSize));
         record.setFileSuffix(FileUtils.getFileSuffix(filename));
+        String contextType = FileSuffixContextTypeEnum.getContextType(FileUtils.getFileSuffix(filename));
+        record.setFilePreviewContentType(contextType);
         record.setIdentifier(identifier);
         record.setCreateUser(userId);
         record.setCreateTime(new Date());

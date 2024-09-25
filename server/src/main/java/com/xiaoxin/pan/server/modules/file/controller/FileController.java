@@ -12,9 +12,7 @@ import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
 import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.po.*;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
-import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
-import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
-import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.file.vo.*;
 import com.xiaoxin.pan.server.modules.user.controller.UserController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -167,7 +165,6 @@ public class FileController {
     @PostMapping("/upload")
     public R upload(@Validated FileUploadPO fileUploadPO) {
         FileUploadContext fileUploadContext = fileConverter.fileUploadPO2FileUploadContext(fileUploadPO);
-        //todo 添加文件真实后缀
         String fileExtName = FileUtils.getFileExtName(fileUploadPO.getFile().getOriginalFilename());
         fileUploadContext.setFilename(fileUploadPO.getFilename() + XPanConstants.POINT_STR + fileExtName);
         xPanUserFileService.upload(fileUploadContext);
@@ -260,7 +257,7 @@ public class FileController {
 
     /**
      * 播放视频和音频
-     */
+     *//*
     @ApiOperation(
             value = "播放音频视频",
             notes = "该接口提供了文件预览功能",
@@ -278,5 +275,96 @@ public class FileController {
         fileRangeContext.setRange(range);
         String filePath = xPanUserFileService.playVideoAndAudio(fileRangeContext);
         return ResponseEntity.status(response.getStatus()).body(new FileSystemResource(filePath));
+    }*/
+
+    /**
+     * 播放视频和音频
+     */
+    @ApiOperation(
+            value = "播放音频视频",
+            notes = "该接口提供了文件预览功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/player")
+    public void playVideoAndAudio(@RequestHeader(value = "Range", required = false) String range,
+                                                                @RequestParam("fileId") String fileId,
+                                                                HttpServletResponse response) {
+        FileRangeContext fileRangeContext = new FileRangeContext();
+        fileRangeContext.setFileId(IdUtil.decrypt(fileId));
+        fileRangeContext.setResponse(response);
+        fileRangeContext.setUserId(UserIdUtil.get());
+        fileRangeContext.setRange(range);
+        xPanUserFileService.playVideoAndAudio(fileRangeContext);
     }
+
+    /**
+     * 查询文件夹树
+     *
+     * @return
+     */
+    @ApiOperation(
+            value = "查询文件夹树",
+            notes = "该接口提供了查询文件夹树的功能",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/folder/tree")
+    public R<List<FolderTreeNodeVO>> getFolderTree() {
+        QueryFolderTreeContext context = new QueryFolderTreeContext();
+        context.setUserId(UserIdUtil.get());
+        List<FolderTreeNodeVO> result = xPanUserFileService.getFolderTree(context);
+        return R.data(result);
+    }
+
+    /**
+     * 文件转移
+     * @param transferFilePO
+     * @return
+     */
+    @ApiOperation(
+            value = "文件转移",
+            notes = "该接口提供了文件转移的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("/transfer")
+    public R transfer(@Validated @RequestBody TransferFilePO transferFilePO) {
+        String fileIds = transferFilePO.getFileIds();
+        String targetParentId = transferFilePO.getTargetParentId();
+        List<Long> fileIdList = Splitter.on(XPanConstants.COMMON_SEPARATOR).splitToList(fileIds).stream().map(IdUtil::decrypt).collect(Collectors.toList());
+        TransferFileContext context = new TransferFileContext();
+        context.setFileIdList(fileIdList);
+        context.setTargetParentId(IdUtil.decrypt(targetParentId));
+        context.setUserId(UserIdUtil.get());
+        xPanUserFileService.transfer(context);
+        return R.success();
+    }
+
+    /**
+     * 文件复制
+     */
+    @ApiOperation(
+            value = "文件复制",
+            notes = "该接口提供了文件复制的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @PostMapping("/copy")
+    public R copy(@Validated @RequestBody CopyFilePO copyFilePO){
+        String fileIds = copyFilePO.getFileIds();
+        String targetParentId = copyFilePO.getTargetParentId();
+        List<Long> fileIdList = Splitter.on(XPanConstants.COMMON_SEPARATOR)
+                .splitToList(fileIds)
+                .stream()
+                .map(IdUtil::decrypt)
+                .collect(Collectors.toList());
+        CopyFileContext copyFileContext = new CopyFileContext();
+        copyFileContext.setFileIdList(fileIdList);
+        copyFileContext.setUserId(UserIdUtil.get());
+        copyFileContext.setTargetParentId(IdUtil.decrypt(targetParentId));
+        xPanUserFileService.copy(copyFileContext);
+        return R.success();
+    }
+
 }

@@ -4,6 +4,7 @@ import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
+import com.xiaoxin.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 
@@ -88,4 +89,23 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @param fileRangeContext
      */
     String playVideoAndAudio(FileRangeContext fileRangeContext);
+
+    /**
+     * 获取文件树
+     * @param context
+     * @return
+     */
+    List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext context);
+
+    /**
+     * 转移文件
+     * @param context
+     */
+    void transfer(TransferFileContext context);
+
+    /**
+     * 复制文件
+     * @param copyFileContext
+     */
+    void copy(CopyFileContext copyFileContext);
 }

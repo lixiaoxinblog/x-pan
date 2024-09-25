@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.collect.Lists;
 import com.sun.deploy.net.HttpUtils;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
@@ -26,6 +27,7 @@ import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
 import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
+import com.xiaoxin.pan.server.modules.file.vo.FolderTreeNodeVO;
 import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import com.xiaoxin.pan.storage.engine.local.LocalStorageEngine;
@@ -48,10 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -305,6 +304,260 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     }
 
     /**
+     * 获取文件树
+     * 1、查询出该用户的所有文件夹列表
+     * 2、在内存中拼装文件夹树
+     *
+     * @param queryFolderTreeContext
+     * @return
+     */
+    @Override
+    public List<FolderTreeNodeVO> getFolderTree(QueryFolderTreeContext queryFolderTreeContext) {
+        List<XPanUserFile> folderRecords = queryFolderRecords(queryFolderTreeContext.getUserId());
+        return assembleFolderTreeNodeVOList(folderRecords);
+    }
+
+    /**
+     * 转移文件
+     *
+     * @param transferFileContext
+     */
+    @Override
+    public void transfer(TransferFileContext transferFileContext) {
+        checkTransferCondition(transferFileContext);
+        doTransfer(transferFileContext);
+    }
+
+    /**
+     * 复制文件
+     *
+     * @param copyFileContext
+     */
+    @Override
+    public void copy(CopyFileContext copyFileContext) {
+        checkCopyCondition(copyFileContext);
+        doCopy(copyFileContext);
+    }
+
+    /**
+     * 执行复制动作
+     *
+     * @param copyFileContext
+     */
+    private void doCopy(CopyFileContext copyFileContext) {
+        List<XPanUserFile> prepareRecords = copyFileContext.getPrepareRecords();
+        if (CollectionUtils.isNotEmpty(prepareRecords)) {
+            ArrayList<XPanUserFile> allRecords = Lists.newArrayList();
+            prepareRecords.forEach(record -> assembleCopyChildRecord(
+                    allRecords
+                    , record
+                    , copyFileContext.getTargetParentId()
+                    , copyFileContext.getUserId()
+            ));
+            if (!saveBatch(allRecords)){
+                throw new XPanBusinessException("文件复制失败");
+            }
+        }
+    }
+
+
+    /**
+     * 拼装当前文件记录及子文件记录
+     *
+     * @param allRecords
+     * @param record
+     * @param targetParentId
+     * @param userId
+     */
+    private void assembleCopyChildRecord(ArrayList<XPanUserFile> allRecords, XPanUserFile record, Long targetParentId, Long userId) {
+        Long newFileId = IdUtil.get();
+        Long oldFileId = record.getFileId();
+        record.setFileId(newFileId);
+        record.setParentId(targetParentId);
+        record.setUserId(userId);
+        record.setCreateTime(new Date());
+        record.setCreateUser(userId);
+        record.setUpdateTime(new Date());
+        record.setUpdateUser(userId);
+        handleDuplicateFilename(record);
+        allRecords.add(record);
+
+        if (checkIsFolder(record)) {
+            List<XPanUserFile> xPanUserFiles = findChildRecords(oldFileId);
+            xPanUserFiles.forEach(childRecords -> {
+                assembleCopyChildRecord(allRecords, childRecords, newFileId, userId);
+            });
+        }
+    }
+
+    /**
+     * 查找下一级的文件记录
+     *
+     * @param parentId
+     * @return
+     */
+    private List<XPanUserFile> findChildRecords(Long parentId) {
+        QueryWrapper<XPanUserFile> queryWrapper = Wrappers.query();
+        queryWrapper.eq("parent_id", parentId);
+        queryWrapper.eq("del_flag", DelFlagEnum.NO.getCode());
+        return list(queryWrapper);
+    }
+
+    /**
+     * 文件转移的条件校验
+     * <p>
+     * 1、目标文件必须是一个文件夹
+     * 2、选中的要转移的文件列表中不能含有目标文件夹以及其子文件夹
+     */
+    private void checkCopyCondition(CopyFileContext copyFileContext) {
+        Long targetParentId = copyFileContext.getTargetParentId();
+        if (!checkIsFolder(getById(targetParentId))) {
+            throw new XPanBusinessException("目标文件不是一个文件夹");
+        }
+        List<Long> fileIdList = copyFileContext.getFileIdList();
+        List<XPanUserFile> xPanUserFiles = listByIds(fileIdList);
+        copyFileContext.setPrepareRecords(xPanUserFiles);
+        if (checkIsChildFolder(xPanUserFiles, targetParentId, copyFileContext.getUserId())) {
+            throw new XPanBusinessException("目标文件夹ID不能是选中文件列表的文件夹ID或其子文件夹ID");
+        }
+    }
+
+    /**
+     * 执行文件转移的动作
+     *
+     * @param transferFileContext
+     */
+    private void doTransfer(TransferFileContext transferFileContext) {
+        List<XPanUserFile> prepareRecords = transferFileContext.getPrepareRecords();
+        prepareRecords.stream().forEach(record -> {
+            record.setParentId(transferFileContext.getTargetParentId());
+            record.setUserId(transferFileContext.getUserId());
+            record.setCreateUser(transferFileContext.getUserId());
+            record.setCreateTime(new Date());
+            record.setUpdateUser(transferFileContext.getUserId());
+            record.setUpdateTime(new Date());
+            handleDuplicateFilename(record);
+        });
+        if (!updateBatchById(prepareRecords)) {
+            throw new XPanBusinessException("文件转移失败");
+        }
+    }
+
+    /**
+     * 文件转移的条件校验
+     * 1、目标文件必须是一个文件夹
+     * 2、选中的要转移的文件列表中不能含有目标文件夹以及其子文件夹
+     *
+     * @param transferFileContext
+     */
+    private void checkTransferCondition(TransferFileContext transferFileContext) {
+        Long targetParentId = transferFileContext.getTargetParentId();
+        if (!checkIsFolder(getById(targetParentId))) {
+            throw new XPanBusinessException("目标文件不是一个文件夹");
+        }
+        List<Long> fileIdList = transferFileContext.getFileIdList();
+        List<XPanUserFile> prepareRecords = listByIds(fileIdList);
+        transferFileContext.setPrepareRecords(prepareRecords);
+        if (checkIsChildFolder(prepareRecords, targetParentId, transferFileContext.getUserId())) {
+            throw new XPanBusinessException("目标文件夹ID不能是选中文件列表的文件夹ID或其子文件夹ID");
+        }
+    }
+
+    /**
+     * 校验目标文件夹ID是都是要操作的文件记录的文件夹ID以及其子文件夹ID
+     * 1、如果要操作的文件列表中没有文件夹，那就直接返回false
+     * 2、拼装文件夹ID以及所有子文件夹ID，判断存在即可
+     *
+     * @param prepareRecords
+     * @param targetParentId
+     * @param userId
+     * @return
+     */
+    private boolean checkIsChildFolder(List<XPanUserFile> prepareRecords, Long targetParentId, Long userId) {
+        prepareRecords = prepareRecords.stream()
+                .filter(record -> Objects.equals(record.getFolderFlag(),
+                        FolderFlagEnum.YES.getCode()))
+                .collect(Collectors.toList());
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(prepareRecords)) {
+            return false;
+        }
+        List<XPanUserFile> folderRecords = queryFolderRecords(userId);
+        Map<Long, List<XPanUserFile>> folderRecordMap = folderRecords
+                .stream()
+                .collect(Collectors.groupingBy(XPanUserFile::getParentId));
+        List<XPanUserFile> unavailableFolderRecords = Lists.newArrayList();
+        unavailableFolderRecords.addAll(prepareRecords);
+        prepareRecords.stream()
+                .forEach(record ->
+                        findAllChildFolderRecords(unavailableFolderRecords,
+                                folderRecordMap, record));
+        List<Long> unavailableFolderRecordIds = unavailableFolderRecords
+                .stream()
+                .map(XPanUserFile::getFileId)
+                .collect(Collectors.toList());
+        return unavailableFolderRecordIds.contains(targetParentId);
+    }
+
+    /**
+     * 查找文件夹的所有子文件夹记录
+     *
+     * @param unavailableFolderRecords
+     * @param folderRecordMap
+     * @param record
+     */
+    private void findAllChildFolderRecords(List<XPanUserFile> unavailableFolderRecords,
+                                           Map<Long, List<XPanUserFile>> folderRecordMap,
+                                           XPanUserFile record) {
+        if (Objects.isNull(record)) {
+            return;
+        }
+        List<XPanUserFile> childFolderRecords = folderRecordMap.get(record.getFileId());
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(childFolderRecords)) {
+            return;
+        }
+        unavailableFolderRecords.addAll(childFolderRecords);
+        childFolderRecords.stream().forEach(childRecord -> findAllChildFolderRecords(unavailableFolderRecords, folderRecordMap, childRecord));
+    }
+
+    /**
+     * 拼装文件夹树列表
+     *
+     * @param folderRecords
+     * @return
+     */
+    private List<FolderTreeNodeVO> assembleFolderTreeNodeVOList(List<XPanUserFile> folderRecords) {
+        if (CollectionUtils.isEmpty(folderRecords)) {
+            return new ArrayList<>();
+        }
+        List<FolderTreeNodeVO> folderTreeNodeVOList = folderRecords.stream()
+                .map(fileConverter::xPanUserFile2FolderTreeNodeVO)
+                .collect(Collectors.toList());
+        Map<Long, List<FolderTreeNodeVO>> mappedFolderTreeNodeVOMap = folderTreeNodeVOList.stream()
+                .collect(Collectors.groupingBy(FolderTreeNodeVO::getParentId));
+        for (FolderTreeNodeVO node : folderTreeNodeVOList) {
+            List<FolderTreeNodeVO> folderTreeNodeVOS = mappedFolderTreeNodeVOMap.get(node.getId());
+            if (CollectionUtils.isNotEmpty(folderTreeNodeVOS)) {
+                node.getChildren().addAll(folderTreeNodeVOS);
+            }
+        }
+        return folderTreeNodeVOList;
+    }
+
+    /**
+     * 查询用户所有有效的文件夹信息
+     *
+     * @param userId
+     * @return
+     */
+    private List<XPanUserFile> queryFolderRecords(Long userId) {
+        QueryWrapper<XPanUserFile> queryWrapper = Wrappers.query();
+        queryWrapper.eq("user_id", userId);
+        queryWrapper.eq("folder_flag", FolderFlagEnum.YES.getCode());
+        queryWrapper.eq("del_flag", DelFlagEnum.NO.getCode());
+        return list(queryWrapper);
+    }
+
+    /**
      * 执行播放动作
      *
      * @param xPanUserFile
@@ -315,7 +568,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         if (Objects.isNull(xPanFile)) {
             throw new XPanBusinessException("当前文件记录不存在!");
         }
-        addRangeResponseHeader(fileRangeContext,xPanFile);
+        addRangeResponseHeader(fileRangeContext, xPanFile);
         realFile2OutputStreamRange(xPanFile.getRealPath(), fileRangeContext);
         return xPanFile.getRealPath();
     }
@@ -361,6 +614,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
      * 添加Range响应头
      */
     private void addRangeResponseHeader(FileRangeContext fileRangeContext, XPanFile xPanFile) {
+        fileRangeContext.getResponse().reset();
         long start, end, fileSize = Long.parseLong(xPanFile.getFileSize());
         String range = fileRangeContext.getRange();
         if (Objects.isNull(range)) {
@@ -377,8 +631,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         // 设置 Content-Range 头
         fileRangeContext.getResponse().setHeader(FileConstants.CONTENT_RANGE_STR, "bytes " + start + "-" + end + "/" + fileSize);
         fileRangeContext.getResponse().setHeader(FileConstants.ACCEPT_RANGES_STR, "bytes");
-/*        fileRangeContext.getResponse().setContentType("video/mp4");
-        fileRangeContext.getResponse().setContentLengthLong(end - start + 1);*/
+        fileRangeContext.getResponse().setContentType(xPanFile.getFilePreviewContentType());
         fileRangeContext.setStart(start);
         fileRangeContext.setEnd(end);
     }
@@ -459,7 +712,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         if (Objects.isNull(xPanUserFile)) {
             throw new XPanBusinessException("当前文件记录不存在!");
         }
-        return FolderFlagEnum.YES.getCode().equals(xPanUserFile.getDelFlag());
+        return FolderFlagEnum.YES.getCode().equals(xPanUserFile.getFolderFlag());
     }
 
     /**
@@ -625,7 +878,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
                               Long realFileId,
                               Long userId,
                               String fileSizeDesc) {
-        XPanUserFile entity = assembleRPanFUserFile(parentId, userId, filename, folderFlagEnum, fileType, realFileId, fileSizeDesc);
+        XPanUserFile entity = assembleXPanFUserFile(parentId, userId, filename, folderFlagEnum, fileType, realFileId, fileSizeDesc);
         if (!save((entity))) {
             throw new XPanBusinessException("保存文件信息失败");
         }
@@ -646,7 +899,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
      * @param fileSizeDesc
      * @return
      */
-    private XPanUserFile assembleRPanFUserFile(Long parentId, Long userId, String filename, FolderFlagEnum folderFlagEnum, Integer fileType, Long realFileId, String fileSizeDesc) {
+    private XPanUserFile assembleXPanFUserFile(Long parentId, Long userId, String filename, FolderFlagEnum folderFlagEnum, Integer fileType, Long realFileId, String fileSizeDesc) {
         XPanUserFile entity = new XPanUserFile();
         entity.setFileId(IdUtil.get());
         entity.setUserId(userId);
@@ -666,7 +919,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     }
 
     /**
-     * 处理用户重复名称
+     * 处理文件重复名称
      * 如果同一文件夹下面有文件名称重复
      * 按照系统级规则重命名文件
      *
