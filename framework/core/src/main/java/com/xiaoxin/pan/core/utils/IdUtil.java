@@ -1,11 +1,12 @@
 package com.xiaoxin.pan.core.utils;
 
-import cn.hutool.core.codec.Base64;
+import java.util.Base64;
 import cn.hutool.core.util.ArrayUtil;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
+import io.jsonwebtoken.impl.Base64UrlCodec;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -186,7 +187,11 @@ public class IdUtil {
 
     /**
      * 加密ID
-     *
+     *Base64.encode(encrypt)改为Base64.getUrlEncoder().withoutPadding().encodeToString(encrypt);
+     * 因为出现原加密后的密文为DbM0eEk1cl5AEIh9+ikuBw==
+     * 但是经过网络传输变DbM0eEk1cl5AEIh9%2BikuBw==加密后的Base64字符串
+     * DbM0eEk1cl5AEIh9+ikuBw== 中的加号 + 被替换成了 %2B，
+     * 这是因为加号在URL中是保留字符，用于表示空格。
      * @return
      */
     public static String encrypt(Long id) {
@@ -195,7 +200,8 @@ public class IdUtil {
             byteBuffer.putLong(0, id);
             byte[] content = byteBuffer.array();
             byte[] encrypt = AES128Util.aesEncrypt(content);
-            return Base64.encode(encrypt);
+//            return Base64.encode(encrypt);
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(encrypt);
         }
         return StringUtils.EMPTY;
     }
@@ -208,7 +214,15 @@ public class IdUtil {
      */
     public static Long decrypt(String decryptId) {
         if (StringUtils.isNotBlank(decryptId)) {
-            byte[] encrypt = Base64.decode(decryptId);
+//            byte[] encrypt = Base64.decode(decryptId);
+            // 解码时，需要先恢复填充字符，然后再解码
+            int pad = 4 - (decryptId.length() % 4); // 计算需要添加的等号数量
+            if (pad < 4) {
+                for (int i = 0; i < pad; i++) {
+                    decryptId += "=";
+                }
+            }
+            byte[] encrypt = Base64.getUrlDecoder().decode(decryptId);
             byte[] content = AES128Util.aesDecode(encrypt);
             if (ArrayUtil.isNotEmpty(content)) {
                 ByteBuffer byteBuffer = ByteBuffer.wrap(content);

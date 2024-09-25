@@ -1,8 +1,10 @@
 package com.xiaoxin.pan.server.modules.file.mapper;
 
+import com.xiaoxin.pan.server.modules.file.context.FileSearchContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaoxin.pan.server.modules.file.vo.FileSearchResultVO;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -19,6 +21,14 @@ import java.util.List;
 public interface XPanUserFileMapper extends BaseMapper<XPanUserFile> {
 
     List<XPanUserFileVO> selectFileList(@Param("param") QueryFileListContext context);
+
+    /**
+     * 文件搜索
+     *
+     * @param fileSearchContext
+     * @return
+     */
+    List<FileSearchResultVO> selectFile(@Param("param") FileSearchContext fileSearchContext);
 }
 
 

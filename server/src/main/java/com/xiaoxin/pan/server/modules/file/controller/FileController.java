@@ -2,6 +2,7 @@ package com.xiaoxin.pan.server.modules.file.controller;
 
 import com.google.common.base.Splitter;
 import com.xiaoxin.pan.core.constants.XPanConstants;
+import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
@@ -16,6 +17,7 @@ import com.xiaoxin.pan.server.modules.file.vo.*;
 import com.xiaoxin.pan.server.modules.user.controller.UserController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.MediaType;
@@ -26,6 +28,10 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -365,6 +371,51 @@ public class FileController {
         copyFileContext.setTargetParentId(IdUtil.decrypt(targetParentId));
         xPanUserFileService.copy(copyFileContext);
         return R.success();
+    }
+
+    /**
+     * 文件搜索功能
+     */
+    @ApiOperation(
+            value = "文件搜索功能",
+            notes = "该接口提供了文件搜索的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/search")
+    public R<List<FileSearchResultVO>> search(@Validated FileSearchPO fileSearchPO){
+        FileSearchContext fileSearchContext = new FileSearchContext();
+        fileSearchContext.setKeyword(fileSearchPO.getKeyword());
+        fileSearchContext.setUserId(UserIdUtil.get());
+        if(StringUtils.isNotBlank(fileSearchPO.getFileTypes()) && !Objects.equals(FileConstants.ALL_FILE_TYPE,fileSearchPO.getFileTypes())){
+            List<Integer> typesList = Splitter.on(XPanConstants.COMMON_SEPARATOR)
+                    .splitToList(fileSearchPO.getFileTypes())
+                    .stream()
+                    .map(Integer::valueOf)
+                    .collect(Collectors.toList());
+            fileSearchContext.setFileTypeArray(typesList);
+        }
+        return R.data(xPanUserFileService.search(fileSearchContext));
+    }
+
+    /**
+     * 查询面包屑列表
+     */
+    @ApiOperation(
+            value = "查询面包屑列表",
+            notes = "该接口提供了查询面包屑列表的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/breadcrumbs")
+    public R<List<BreadcrumbVO>> getBreadcrumbs(@NotBlank(message = "文件ID不能为空")
+                                                @RequestParam(value = "fileId", required = false)
+                                                String fileId){
+        QueryBreadcrumbsContext queryBreadcrumbsContext = new QueryBreadcrumbsContext();
+        queryBreadcrumbsContext.setFileId(IdUtil.decrypt(fileId));
+        queryBreadcrumbsContext.setUserId(UserIdUtil.get());
+        List<BreadcrumbVO> result =  xPanUserFileService.getBreadcrumbs(queryBreadcrumbsContext);
+        return R.data(result);
     }
 
 }

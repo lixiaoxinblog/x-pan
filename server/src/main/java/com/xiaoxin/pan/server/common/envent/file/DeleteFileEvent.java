@@ -17,6 +17,7 @@ import java.util.List;
 @ToString
 public class DeleteFileEvent extends ApplicationEvent {
 
+    private static final long serialVersionUID = 1848184715719644846L;
     private List<Long> fileIdList;
 
     public DeleteFileEvent(Object source, List<Long> fileIdList) {

@@ -1,12 +1,10 @@
 package com.xiaoxin.pan.server.modules.file.service;
 
+import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
-import com.xiaoxin.pan.server.modules.file.vo.FolderTreeNodeVO;
-import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
-import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.file.vo.*;
 
 import java.util.List;
 
@@ -22,6 +20,7 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
 
     /**
      * 查询列表
+     *
      * @param queryFileListContext 查询上下文
      * @return 文件列表
      */
@@ -29,18 +28,21 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
 
     /**
      * 文件重命名
+     *
      * @param updateFilenameContext
      */
     void updateFileName(UpdateFilenameContext updateFilenameContext);
 
     /**
      * 批量删除文件
+     *
      * @param deleteFileContext
      */
     void deleteFile(DeleteFileContext deleteFileContext);
 
     /**
      * 文件秒传
+     *
      * @param uploadFileContext
      * @return
      */
@@ -48,12 +50,14 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
 
     /**
      * 单文件上传
+     *
      * @param fileUploadContext
      */
     void upload(FileUploadContext fileUploadContext);
 
     /**
      * 文件分片上传
+     *
      * @param fileChunkUploadContext
      * @return
      */
@@ -61,6 +65,7 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
 
     /**
      * 获取已经上传的分片
+     *
      * @param queryUploadedChunksContext
      * @return
      */
@@ -68,30 +73,35 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
 
     /**
      * 文件分片合并
+     *
      * @param fileChunkMergeContext
      */
     void mergeFile(FileChunkMergeContext fileChunkMergeContext);
 
     /**
      * 文件下载
+     *
      * @param fileDownloadContext
      */
     void download(FileDownloadContext fileDownloadContext);
 
     /**
      * 文件预览
+     *
      * @param filePreviewContext
      */
     void preview(FilePreviewContext filePreviewContext);
 
     /**
      * 播放音视频
+     *
      * @param fileRangeContext
      */
     String playVideoAndAudio(FileRangeContext fileRangeContext);
 
     /**
      * 获取文件树
+     *
      * @param context
      * @return
      */
@@ -99,13 +109,31 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
 
     /**
      * 转移文件
+     *
      * @param context
      */
     void transfer(TransferFileContext context);
 
     /**
      * 复制文件
+     *
      * @param copyFileContext
      */
     void copy(CopyFileContext copyFileContext);
+
+    /**
+     * 搜索文件
+     *
+     * @param fileSearchContext
+     * @return
+     */
+    List<FileSearchResultVO> search(FileSearchContext fileSearchContext);
+
+    /**
+     * 查询面包屑
+     *
+     * @param queryBreadcrumbsContext
+     * @return
+     */
+    List<BreadcrumbVO> getBreadcrumbs(QueryBreadcrumbsContext queryBreadcrumbsContext);
 }

@@ -6,16 +6,19 @@ import com.xiaoxin.pan.serializer.IdEncryptSerializer;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import org.apiguardian.api.API;
 
 import java.io.Serializable;
 import java.util.Date;
 
+/**
+ * 用户搜索文件列表相应实体
+ */
 @Data
-@ApiModel(value = "文件列表相应实体")
-public class XPanUserFileVO implements Serializable {
+@ApiModel(value = "用户搜索文件列表相应实体")
+public class FileSearchResultVO implements Serializable {
 
-    private static final long serialVersionUID = -827269782409823864L;
+    private static final long serialVersionUID = 3317950091518504175L;
+
     @JsonSerialize(using = IdEncryptSerializer.class)
     @ApiModelProperty(value = "文件ID")
     private Long fileId;
@@ -23,6 +26,9 @@ public class XPanUserFileVO implements Serializable {
     @JsonSerialize(using = IdEncryptSerializer.class)
     @ApiModelProperty(value = "父文件夹ID")
     private Long parentId;
+
+    @ApiModelProperty(value = "父文件夹名称")
+    private String parentFilename;
 
     @ApiModelProperty(value = "文件名称")
     private String filename;

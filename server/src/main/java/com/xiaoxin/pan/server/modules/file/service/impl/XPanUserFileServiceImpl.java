@@ -10,9 +10,11 @@ import com.google.common.collect.Lists;
 import com.sun.deploy.net.HttpUtils;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
+import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.FileUtils;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.envent.file.DeleteFileEvent;
+import com.xiaoxin.pan.server.common.envent.file.UserSearchEvent;
 import com.xiaoxin.pan.server.common.utils.HttpUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
@@ -26,10 +28,7 @@ import com.xiaoxin.pan.server.modules.file.service.XPanFileChunkService;
 import com.xiaoxin.pan.server.modules.file.service.XPanFileService;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.mapper.XPanUserFileMapper;
-import com.xiaoxin.pan.server.modules.file.vo.FileChunkUploadVO;
-import com.xiaoxin.pan.server.modules.file.vo.FolderTreeNodeVO;
-import com.xiaoxin.pan.server.modules.file.vo.UploadedChunksVO;
-import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.file.vo.*;
 import com.xiaoxin.pan.storage.engine.local.LocalStorageEngine;
 import com.xiaoxin.pan.storge.engine.core.StorageEngine;
 import com.xiaoxin.pan.storge.engine.core.context.ReadFileContext;
@@ -340,6 +339,94 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
     }
 
     /**
+     * 搜索文件
+     * 1、执行文件搜索
+     * 2、拼装文件的父文件夹名称
+     * 3、执行文件搜索后的后置动作
+     *
+     * @param fileSearchContext
+     * @return
+     */
+    @Override
+    public List<FileSearchResultVO> search(FileSearchContext fileSearchContext) {
+        List<FileSearchResultVO> result = doSearch(fileSearchContext);
+        fillParentFilename(result);
+        afterSearch(fileSearchContext);
+        return result;
+    }
+
+    /**
+     * 查询面包屑列表
+     * 1、获取用户所有文件夹信息
+     * 2、拼接需要用到的面包屑的列表
+     *
+     * @param queryBreadcrumbsContext
+     * @return
+     */
+    @Override
+    public List<BreadcrumbVO> getBreadcrumbs(QueryBreadcrumbsContext queryBreadcrumbsContext) {
+        List<XPanUserFile> folderRecords = queryFolderRecords(queryBreadcrumbsContext.getUserId());
+        Map<Long, BreadcrumbVO> prepareBreadcrumbVOMap = folderRecords.stream()
+                .map(BreadcrumbVO::transfer)
+                .collect(Collectors.toMap(BreadcrumbVO::getId, r -> r));
+        BreadcrumbVO currentNode = null;
+        Long fileId = queryBreadcrumbsContext.getFileId();
+        List<BreadcrumbVO> result = Lists.newLinkedList();
+
+        do {
+            currentNode = prepareBreadcrumbVOMap.get(fileId);
+            if (Objects.nonNull(currentNode)) {
+                result.add(0, currentNode);
+                fileId = currentNode.getParentId();
+            }
+        }while (Objects.nonNull(currentNode));
+
+        return result;
+    }
+
+    /**
+     * 查询文件后置处理
+     * 发布文件搜索的事件
+     *
+     * @param fileSearchContext
+     */
+    private void afterSearch(FileSearchContext fileSearchContext) {
+        UserSearchEvent userSearchEvent = new UserSearchEvent(this, fileSearchContext);
+        applicationContext.publishEvent(userSearchEvent);
+    }
+
+    /**
+     * 填充文件搜索结果的父文件夹名称
+     *
+     * @param result
+     */
+    private void fillParentFilename(List<FileSearchResultVO> result) {
+        if (CollectionUtils.isEmpty(result)) {
+            return;
+        }
+        List<Long> parentIdList = new ArrayList<>();
+        for (FileSearchResultVO fileSearchResultVO : result) {
+            Long parentId = fileSearchResultVO.getParentId();
+            parentIdList.add(parentId);
+        }
+        List<XPanUserFile> parentRecords = listByIds(parentIdList);
+        Map<Long, String> fileId2filenameMap = parentRecords.stream()
+                .collect(Collectors.toMap(XPanUserFile::getFileId,
+                        XPanUserFile::getFilename));
+        result.forEach(vo -> vo.setParentFilename(fileId2filenameMap.get(vo.getParentId())));
+    }
+
+    /**
+     * 执行文件搜索
+     *
+     * @param fileSearchContext
+     * @return
+     */
+    private List<FileSearchResultVO> doSearch(FileSearchContext fileSearchContext) {
+        return baseMapper.selectFile(fileSearchContext);
+    }
+
+    /**
      * 执行复制动作
      *
      * @param copyFileContext
@@ -354,7 +441,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
                     , copyFileContext.getTargetParentId()
                     , copyFileContext.getUserId()
             ));
-            if (!saveBatch(allRecords)){
+            if (!saveBatch(allRecords)) {
                 throw new XPanBusinessException("文件复制失败");
             }
         }
