@@ -62,6 +62,12 @@
             <artifactId>storage-engine-local</artifactId>
             <version>1.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.xiaoxin</groupId>
+            <artifactId>schedule</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
