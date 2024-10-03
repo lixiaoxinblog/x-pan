@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.share.service;
 
+import com.xiaoxin.pan.server.modules.share.context.SaveShareFilesContext;
 import com.xiaoxin.pan.server.modules.share.entity.XPanShareFile;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -10,4 +11,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface XPanShareFileService extends IService<XPanShareFile> {
 
+    /**
+     * 保存分享的文件的对应关系
+     * @param saveShareFilesContext
+     */
+    void saveShareFiles(SaveShareFilesContext saveShareFilesContext);
 }

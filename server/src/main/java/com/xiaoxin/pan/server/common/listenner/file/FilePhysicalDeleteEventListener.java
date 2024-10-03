@@ -104,7 +104,7 @@ public class FilePhysicalDeleteEventListener implements ApplicationContextAware 
      */
     private List<Long> findAllUnusedRealFileIdList(List<XPanUserFile> allRecords) {
         return allRecords.stream()
-                .filter(record -> Objects.equals(record.getFolderFlag(), FolderFlagEnum.YES.getCode()))
+                .filter(record -> Objects.equals(record.getFolderFlag(), FolderFlagEnum.NO.getCode()))
                 .filter(this::isUnused)
                 .map(XPanUserFile::getRealFileId)
                 .collect(Collectors.toList());

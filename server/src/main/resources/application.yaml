@@ -50,3 +50,5 @@ com:
           local:
             root-file-path: F:\xpan\upload
             root-file-chunk-path: F:\xpan\chunk
+      server:
+        share-prefix: http://127.0.0.1:8080/share/
