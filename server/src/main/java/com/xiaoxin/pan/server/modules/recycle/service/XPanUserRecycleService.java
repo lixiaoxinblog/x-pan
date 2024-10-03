@@ -1,6 +1,7 @@
 package com.xiaoxin.pan.server.modules.recycle.service;
 
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.recycle.context.DeleteContext;
 import com.xiaoxin.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.xiaoxin.pan.server.modules.recycle.context.RestoreContext;
 
@@ -20,4 +21,11 @@ public interface XPanUserRecycleService {
      * @param restoreContext
      */
     void restore(RestoreContext restoreContext);
+
+    /**
+     * 文件彻底删除
+     *
+     * @param deleteContext
+     */
+    void delete(DeleteContext deleteContext);
 }

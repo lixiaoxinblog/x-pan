@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.file.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
@@ -16,6 +17,7 @@ import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.envent.file.DeleteFileEvent;
 import com.xiaoxin.pan.server.common.envent.file.UserSearchEvent;
 import com.xiaoxin.pan.server.common.utils.HttpUtil;
+import com.xiaoxin.pan.server.common.utils.UserIdUtil;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.converter.FileConverter;
@@ -379,9 +381,67 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
                 result.add(0, currentNode);
                 fileId = currentNode.getParentId();
             }
-        }while (Objects.nonNull(currentNode));
+        } while (Objects.nonNull(currentNode));
 
         return result;
+    }
+
+    /**
+     * 递归查询所有子文件记录
+     *
+     * @param records
+     * @return
+     */
+    @Override
+    public List<XPanUserFile> findAllFileRecords(List<XPanUserFile> records) {
+        ArrayList<XPanUserFile> xPanUserFiles = Lists.newArrayList(records);
+        if (CollectionUtils.isEmpty(xPanUserFiles)) {
+            return xPanUserFiles;
+        }
+        long count = xPanUserFiles
+                .stream()
+                .filter(record -> Objects.equals(record.getFolderFlag(), FolderFlagEnum.YES.getCode()))
+                .count();
+        if (count == 0) {
+            return xPanUserFiles;
+        }
+        records.forEach(record -> doFindAllFileRecords(xPanUserFiles, record));
+        return records;
+    }
+
+    /**
+     * 递归查询所有的子文件信息
+     *
+     * @param xPanUserFiles
+     * @param record
+     */
+    private void doFindAllFileRecords(ArrayList<XPanUserFile> xPanUserFiles, XPanUserFile record) {
+        if (Objects.isNull(record)) {
+            return;
+        }
+        if (!checkIsFolder(record)) {
+            return;
+        }
+        List<XPanUserFile> childRecords = findChildRecordsIgnoreDelFlag(record.getFileId());
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(childRecords)) {
+            return;
+        }
+        xPanUserFiles.addAll(childRecords);
+        childRecords.stream()
+                .filter(childRecord -> FolderFlagEnum.YES.getCode().equals(childRecord.getFolderFlag()))
+                .forEach(childRecord -> doFindAllFileRecords(xPanUserFiles, childRecord));
+    }
+
+    /**
+     * 查询文件夹下面的文件记录，忽略删除标识
+     *
+     * @param fileId
+     * @return
+     */
+    private List<XPanUserFile> findChildRecordsIgnoreDelFlag(Long fileId) {
+        QueryWrapper<XPanUserFile> queryWrapper = Wrappers.query();
+        queryWrapper.eq("parent_id", fileId);
+        return list(queryWrapper);
     }
 
     /**

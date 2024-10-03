@@ -136,4 +136,11 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @return
      */
     List<BreadcrumbVO> getBreadcrumbs(QueryBreadcrumbsContext queryBreadcrumbsContext);
+
+    /**
+     * 递归查询所有子文件信息
+     * @param records
+     * @return
+     */
+    List<XPanUserFile> findAllFileRecords(List<XPanUserFile> records);
 }

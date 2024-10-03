@@ -1,16 +1,19 @@
 package com.xiaoxin.pan.server.modules.recycle.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
+import com.xiaoxin.pan.server.common.envent.file.FilePhysicalDeleteEvent;
 import com.xiaoxin.pan.server.common.envent.file.FileRestoreEvent;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
 import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.recycle.context.DeleteContext;
 import com.xiaoxin.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.xiaoxin.pan.server.modules.recycle.context.RestoreContext;
 import com.xiaoxin.pan.server.modules.recycle.service.XPanUserRecycleService;
@@ -75,7 +78,74 @@ public class XPanUserRecycleServiceImpl implements XPanUserRecycleService, Appli
     }
 
     /**
+     * 文件彻底删除
+     * 1、校验操作权限
+     * 2、递归查找所有子文件
+     * 3、执行文件删除的动作
+     * 4、删除后的后置动作
+     *
+     * @param deleteContext
+     */
+    @Override
+    public void delete(DeleteContext deleteContext) {
+        checkFileDeletePermission(deleteContext);
+        findAllFileRecords(deleteContext);
+        doDelete(deleteContext);
+        afterDelete(deleteContext);
+    }
+
+
+    /**
+     * 文件彻底删除之后的后置函数
+     *发送一个文件彻底删除的事件
+     *
+     * @param deleteContext
+     */
+    private void afterDelete(DeleteContext deleteContext) {
+        FilePhysicalDeleteEvent filePhysicalDeleteEvent = new FilePhysicalDeleteEvent(this, deleteContext.getAllRecords());
+        applicationContext.publishEvent(filePhysicalDeleteEvent);
+    }
+
+    /**
+     * 执行文件删除的动作
+     *
+     * @param deleteContext
+     */
+    private void doDelete(DeleteContext deleteContext) {
+        List<Long> fileIdList = deleteContext.getFileIdList();
+        if (!xPanUserFileService.removeByIds(fileIdList)) {
+            throw new XPanBusinessException("文件删除失败！");
+        }
+    }
+
+    /**
+     * 递归查询所有的子文件
+     *
+     * @param deleteContext
+     */
+    private void findAllFileRecords(DeleteContext deleteContext) {
+        List<XPanUserFile> records = deleteContext.getRecords();
+        List<XPanUserFile> allRecords = xPanUserFileService.findAllFileRecords(records);
+        deleteContext.setAllRecords(allRecords);
+    }
+
+    /**
+     * 校验文件删除的操作权限
+     */
+    private void checkFileDeletePermission(DeleteContext deleteContext) {
+        LambdaQueryWrapper<XPanUserFile> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(XPanUserFile::getUserId, deleteContext.getUserId());
+        queryWrapper.in(XPanUserFile::getFileId, deleteContext.getFileIdList());
+        List<XPanUserFile> records = xPanUserFileService.list(queryWrapper);
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(records) || records.size() != deleteContext.getFileIdList().size()) {
+            throw new XPanBusinessException("您无权删除该文件");
+        }
+        deleteContext.setRecords(records);
+    }
+
+    /**
      * 还原文件后置操作
+     *
      * @param restoreContext
      */
     private void afterRestore(RestoreContext restoreContext) {
@@ -96,7 +166,7 @@ public class XPanUserRecycleServiceImpl implements XPanUserRecycleService, Appli
             record.setUpdateTime(new Date());
         });
         boolean updateFlag = xPanUserFileService.updateBatchById(records);
-        if (!updateFlag){
+        if (!updateFlag) {
             throw new XPanBusinessException("文件还原失败！");
         }
     }

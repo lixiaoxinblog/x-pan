@@ -6,8 +6,10 @@ import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.server.common.utils.UserIdUtil;
 import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.recycle.context.DeleteContext;
 import com.xiaoxin.pan.server.modules.recycle.context.QueryRecycleFileListContext;
 import com.xiaoxin.pan.server.modules.recycle.context.RestoreContext;
+import com.xiaoxin.pan.server.modules.recycle.po.DeletePO;
 import com.xiaoxin.pan.server.modules.recycle.po.RestorePO;
 import com.xiaoxin.pan.server.modules.recycle.service.XPanUserRecycleService;
 import io.swagger.annotations.ApiOperation;
@@ -64,6 +66,27 @@ public class RecycleController {
         restoreContext.setFileIdList(ids);
         restoreContext.setUserId(UserIdUtil.get());
         xPanUserRecycleService.restore(restoreContext);
+        return R.success();
+    }
+    /**
+     * 清除回收站文件
+     */
+    @ApiOperation(
+            value = "删除的文件批量彻底删除",
+            notes = "该接口提供了删除的文件批量彻底删除的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @DeleteMapping()
+    public R clear(@Validated @RequestBody DeletePO deletePO){
+        DeleteContext deleteContext = new DeleteContext();
+        List<Long> ids = Splitter.on(XPanConstants.COMMON_SEPARATOR)
+                .splitToList(deletePO.getFileIds())
+                .stream().map(IdUtil::decrypt)
+                .collect(Collectors.toList());
+        deleteContext.setFileIdList(ids);
+        deleteContext.setUserId(UserIdUtil.get());
+        xPanUserRecycleService.delete(deleteContext);
         return R.success();
     }
 
