@@ -2,6 +2,7 @@ package com.xiaoxin.pan.server.modules.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.conditions.update.UpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoxin.pan.cache.core.constanst.CacheConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
@@ -9,6 +10,7 @@ import com.xiaoxin.pan.core.response.ResponseCode;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.core.utils.JwtUtil;
 import com.xiaoxin.pan.core.utils.PasswordUtil;
+import com.xiaoxin.pan.server.common.cache.AnnotationCacheService;
 import com.xiaoxin.pan.server.modules.file.constants.FileConstants;
 import com.xiaoxin.pan.server.modules.file.context.CreateFolderContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
@@ -21,13 +23,17 @@ import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
 import com.xiaoxin.pan.server.modules.user.mapper.XPanUserMapper;
 import com.xiaoxin.pan.server.modules.user.vo.XPanUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -48,6 +54,10 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
     @Autowired
     private CacheManager cacheManager;
+
+    @Autowired
+    @Qualifier(value = "userAnnotationCacheService")
+    private AnnotationCacheService<XPanUser> userCacheService;
 
     public XPanUserServiceImpl(UserConverter userConverter) {
         this.userConverter = userConverter;
@@ -347,6 +357,47 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         exit(changePasswordContext.getUserId());
     }
 
+
+    @Override
+    public XPanUser getById(Serializable id) {
+        return userCacheService.getById(id);
+//        return super.getById(id);
+    }
+
+    @Override
+    public List<XPanUser> listByIds(Collection<? extends Serializable> idList) {
+        throw new XPanBusinessException("请更换手动缓存!");
+//        return super.listByIds(idList);
+    }
+
+    /**
+     * 根据主键删除ID
+     * @param id
+     * @return
+     */
+    @Override
+    public boolean removeById(Serializable id) {
+//        return super.removeById(id);
+        return userCacheService.removeById(id);
+    }
+
+    @Override
+    public boolean removeByIds(Collection<? extends Serializable> idList) {
+        throw new XPanBusinessException("请更换手动缓存!");
+//        return super.removeByIds(idList);
+    }
+
+    @Override
+    public boolean updateById(XPanUser entity) {
+        return userCacheService.updateById(entity.getUserId(),entity);
+//        return super.updateById(entity);
+    }
+
+    @Override
+    public boolean updateBatchById(Collection<XPanUser> entityList) {
+        throw new XPanBusinessException("请更换手动缓存!");
+//        return super.updateBatchById(entityList);
+    }
 }
 
 
