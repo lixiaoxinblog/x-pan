@@ -139,7 +139,7 @@ public class UserController {
         return R.success();
     }
 
-    @GetMapping("/")
+    @GetMapping()
     public R<XPanUserVO> info() {
         XPanUserVO userInfoVO = userService.info(UserIdUtil.get());
         return R.data(userInfoVO);

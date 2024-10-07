@@ -263,8 +263,8 @@ public class FileController {
 
     /**
      * 播放视频和音频
-     *//*
-    @ApiOperation(
+     */
+   /* @ApiOperation(
             value = "播放音频视频",
             notes = "该接口提供了文件预览功能",
             consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,

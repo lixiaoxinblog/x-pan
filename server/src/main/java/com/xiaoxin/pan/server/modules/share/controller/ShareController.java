@@ -4,14 +4,19 @@ import com.google.common.base.Splitter;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.response.R;
 import com.xiaoxin.pan.core.utils.IdUtil;
+import com.xiaoxin.pan.server.common.annotation.LoginIgnore;
+import com.xiaoxin.pan.server.common.annotation.NeedShareCode;
+import com.xiaoxin.pan.server.common.utils.ShareIdUtil;
 import com.xiaoxin.pan.server.common.utils.UserIdUtil;
-import com.xiaoxin.pan.server.modules.share.context.CancelShareContext;
-import com.xiaoxin.pan.server.modules.share.context.CreateShareUrlContext;
-import com.xiaoxin.pan.server.modules.share.context.QueryShareListContext;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.share.context.*;
 import com.xiaoxin.pan.server.modules.share.converter.ShareConverter;
 import com.xiaoxin.pan.server.modules.share.po.CancelSharePO;
+import com.xiaoxin.pan.server.modules.share.po.CheckShareCodePO;
 import com.xiaoxin.pan.server.modules.share.po.CreateShareUrlPO;
 import com.xiaoxin.pan.server.modules.share.service.XPanShareService;
+import com.xiaoxin.pan.server.modules.share.vo.ShareDetailVO;
+import com.xiaoxin.pan.server.modules.share.vo.ShareSimpleDetailVO;
 import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlListVO;
 import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlVO;
 import io.swagger.annotations.ApiOperation;
@@ -20,6 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,9 +97,72 @@ public class ShareController {
                 .map(IdUtil::decrypt)
                 .collect(Collectors.toList());
         cancelShareContext.setShareIdList(shareIdList);
-
         xPanShareService.cancelShare(cancelShareContext);
         return R.success();
+    }
+
+    @ApiOperation(
+            value = "校验分享码",
+            notes = "该接口提供了校验分享码的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @LoginIgnore
+    @PostMapping("/code/check")
+    public R<String> checkShareCode(@Validated @RequestBody CheckShareCodePO checkShareCodePO){
+        CheckShareCodeContext checkShareCodeContext = new CheckShareCodeContext();
+        checkShareCodeContext.setShareCode(checkShareCodePO.getShareCode());
+        checkShareCodeContext.setShareId(IdUtil.decrypt(checkShareCodePO.getShareId()));
+        String token =  xPanShareService.checkShareCode(checkShareCodeContext);
+        return R.data(token);
+    }
+
+    @ApiOperation(
+            value = "查询分享的详情",
+            notes = "该接口提供了查询分享的详情的功能",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @LoginIgnore
+    @NeedShareCode
+    @GetMapping()
+    public R<ShareDetailVO> detail() {
+        QueryShareDetailContext queryShareDetailContext = new QueryShareDetailContext();
+        queryShareDetailContext.setShareId(ShareIdUtil.get());
+        ShareDetailVO vo = xPanShareService.detail(queryShareDetailContext);
+        return R.data(vo);
+    }
+
+    @ApiOperation(
+            value = "查询分享的简单详情",
+            notes = "该接口提供了查询分享的简单详情的功能",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @LoginIgnore
+    @GetMapping("/simple")
+    public R<ShareSimpleDetailVO> simpleDetail(@NotBlank(message = "分享的ID不能为空") @RequestParam(value = "shareId", required = false) String shareId) {
+        QueryShareSimpleDetailContext context = new QueryShareSimpleDetailContext();
+        context.setShareId(IdUtil.decrypt(shareId));
+        ShareSimpleDetailVO vo = xPanShareService.simpleDetail(context);
+        return R.data(vo);
+    }
+
+    @ApiOperation(
+            value = "获取下一级文件列表",
+            notes = "该接口提供了获取下一级文件列表的功能",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/file/list")
+    @NeedShareCode
+    @LoginIgnore
+    public R<List<XPanUserFileVO>> fileList(@NotBlank(message = "文件的父ID不能为空") @RequestParam(value = "parentId", required = false) String parentId) {
+        QueryChildFileListContext queryChildFileListContext = new QueryChildFileListContext();
+        queryChildFileListContext.setShareId(ShareIdUtil.get());
+        queryChildFileListContext.setParentId(IdUtil.decrypt(parentId));
+        List<XPanUserFileVO> result = xPanShareService.fileList(queryChildFileListContext);
+        return R.data(result);
     }
 
 

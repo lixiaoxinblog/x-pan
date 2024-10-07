@@ -1,10 +1,12 @@
 package com.xiaoxin.pan.server.modules.share.service;
 
-import com.xiaoxin.pan.server.modules.share.context.CancelShareContext;
-import com.xiaoxin.pan.server.modules.share.context.CreateShareUrlContext;
-import com.xiaoxin.pan.server.modules.share.context.QueryShareListContext;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.share.context.*;
 import com.xiaoxin.pan.server.modules.share.entity.XPanShare;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaoxin.pan.server.modules.share.po.CheckShareCodePO;
+import com.xiaoxin.pan.server.modules.share.vo.ShareDetailVO;
+import com.xiaoxin.pan.server.modules.share.vo.ShareSimpleDetailVO;
 import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlListVO;
 import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlVO;
 
@@ -38,4 +40,33 @@ public interface XPanShareService extends IService<XPanShare> {
      * @param cancelShareContext
      */
     void cancelShare(CancelShareContext cancelShareContext);
+
+    /**
+     * 校验分享链接code
+     * @param checkShareCodeContext
+     * @return
+     */
+    String checkShareCode(CheckShareCodeContext checkShareCodeContext);
+
+    /**
+     * 分享详情
+     * @param queryShareDetailContext
+     * @return
+     */
+    ShareDetailVO detail(QueryShareDetailContext queryShareDetailContext);
+
+    /**
+     * 简单分享详情
+     * @param context
+     * @return
+     */
+    ShareSimpleDetailVO simpleDetail(QueryShareSimpleDetailContext context);
+
+    /**
+     * 获取下一级的文件列表
+     *
+     * @param queryChildFileListContext
+     * @return
+     */
+    List<XPanUserFileVO> fileList(QueryChildFileListContext queryChildFileListContext);
 }

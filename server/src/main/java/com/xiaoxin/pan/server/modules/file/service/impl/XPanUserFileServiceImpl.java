@@ -1,5 +1,6 @@
 package com.xiaoxin.pan.server.modules.file.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
@@ -299,7 +300,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         XPanUserFile xPanUserFile = getById(fileRangeContext.getFileId());
         checkOperatePermission(xPanUserFile, fileRangeContext.getUserId());
         if (checkIsFolder(xPanUserFile)) {
-            throw new XPanBusinessException("文件夹暂不支持播放");
+            throw new XPanBusinessException("该文件暂不支持播放");
         }
         return doPlayer(xPanUserFile, fileRangeContext);
     }
@@ -406,7 +407,34 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
             return xPanUserFiles;
         }
         records.forEach(record -> doFindAllFileRecords(xPanUserFiles, record));
-        return records;
+        return xPanUserFiles;
+    }
+
+
+    /**
+     * 递归查询所有的子文件信息
+     *
+     * @param shareFileIdList
+     * @return
+     */
+    @Override
+    public List<XPanUserFile> findAllFileRecordsByFiledIdlist(List<Long> shareFileIdList) {
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(shareFileIdList)) {
+            return Lists.newArrayList();
+        }
+        List<XPanUserFile> records = listByIds(shareFileIdList);
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(records)) {
+            return Lists.newArrayList();
+        }
+        return findAllFileRecords(records);
+    }
+
+    @Override
+    public List<XPanUserFileVO> transferVOList(List<XPanUserFile> allFileRecords) {
+        if (org.apache.commons.collections.CollectionUtils.isEmpty(allFileRecords)) {
+            return Lists.newArrayList();
+        }
+        return allFileRecords.stream().map(fileConverter::xPanUserFile2RPanUserFileVO).collect(Collectors.toList());
     }
 
     /**
@@ -779,6 +807,7 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         fileRangeContext.getResponse().setHeader(FileConstants.CONTENT_RANGE_STR, "bytes " + start + "-" + end + "/" + fileSize);
         fileRangeContext.getResponse().setHeader(FileConstants.ACCEPT_RANGES_STR, "bytes");
         fileRangeContext.getResponse().setContentType(xPanFile.getFilePreviewContentType());
+        fileRangeContext.getResponse().setContentLengthLong(fileSize);
         fileRangeContext.setStart(start);
         fileRangeContext.setEnd(end);
     }

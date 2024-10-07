@@ -143,4 +143,19 @@ public interface XPanUserFileService extends IService<XPanUserFile> {
      * @return
      */
     List<XPanUserFile> findAllFileRecords(List<XPanUserFile> records);
+
+    /**
+     * 递归查询所有的子文件信息
+     *
+     * @param shareFileIdList
+     * @return
+     */
+    List<XPanUserFile> findAllFileRecordsByFiledIdlist(List<Long> shareFileIdList);
+
+    /**
+     * 实体转换
+     * @param allFileRecords
+     * @return
+     */
+    List<XPanUserFileVO> transferVOList(List<XPanUserFile> allFileRecords);
 }

@@ -5,33 +5,40 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.collect.Lists;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
+import com.xiaoxin.pan.core.response.ResponseCode;
 import com.xiaoxin.pan.core.utils.IdUtil;
+import com.xiaoxin.pan.core.utils.JwtUtil;
+import com.xiaoxin.pan.core.utils.UUIDUtil;
 import com.xiaoxin.pan.server.common.config.PanServerConfig;
-import com.xiaoxin.pan.server.modules.share.context.CancelShareContext;
-import com.xiaoxin.pan.server.modules.share.context.CreateShareUrlContext;
-import com.xiaoxin.pan.server.modules.share.context.QueryShareListContext;
-import com.xiaoxin.pan.server.modules.share.context.SaveShareFilesContext;
+import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
+import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
+import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
+import com.xiaoxin.pan.server.modules.file.service.XPanUserFileService;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
+import com.xiaoxin.pan.server.modules.share.constants.ShareConstants;
+import com.xiaoxin.pan.server.modules.share.context.*;
 import com.xiaoxin.pan.server.modules.share.enmus.ShareDayTypeEnum;
 import com.xiaoxin.pan.server.modules.share.enmus.ShareStatusEnum;
 import com.xiaoxin.pan.server.modules.share.entity.XPanShare;
 import com.xiaoxin.pan.server.modules.share.entity.XPanShareFile;
+import com.xiaoxin.pan.server.modules.share.po.CheckShareCodePO;
 import com.xiaoxin.pan.server.modules.share.service.XPanShareFileService;
 import com.xiaoxin.pan.server.modules.share.service.XPanShareService;
 import com.xiaoxin.pan.server.modules.share.mapper.XPanShareMapper;
-import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlListVO;
-import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlVO;
+import com.xiaoxin.pan.server.modules.share.vo.*;
+import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
+import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author xiaoxin
@@ -45,6 +52,10 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
     private PanServerConfig panServerConfig;
     @Autowired
     private XPanShareFileService xPanShareFileService;
+    @Autowired
+    private XPanUserFileService xPanUserFileService;
+    @Autowired
+    private XPanUserService xPanUserService;
 
     /**
      * 创建分享链接
@@ -92,14 +103,294 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
     }
 
     /**
+     * 校验分享码是否正确
+     * 1、检查分享的状态是不是正常
+     * 2、校验分享的分享码是不是正确
+     * 3、生成一个短时间的分享token 返回给上游
+     *
+     * @param checkShareCodeContext
+     * @return
+     */
+    @Override
+    public String checkShareCode(CheckShareCodeContext checkShareCodeContext) {
+        XPanShare xPanShare = checkShareStatus(checkShareCodeContext.getShareId());
+        checkShareCodeContext.setRecord(xPanShare);
+        doCheckShareCode(checkShareCodeContext);
+        return generateShareToken(checkShareCodeContext);
+    }
+
+    /**
+     * 查询分享的详情
+     * 1、校验分享的状态
+     * 2、初始化分享实体
+     * 3、查询分享的主体信息
+     * 4、查询分享的文件列表
+     * 5、查询分享者的信息
+     *
+     * @param queryShareDetailContext
+     * @return
+     */
+    @Override
+    public ShareDetailVO detail(QueryShareDetailContext queryShareDetailContext) {
+        XPanShare xPanShare = checkShareStatus(queryShareDetailContext.getShareId());
+        queryShareDetailContext.setRecord(xPanShare);
+        initShareVO(queryShareDetailContext);
+        assembleMainShareInfo(queryShareDetailContext);
+        assembleShareFilesInfo(queryShareDetailContext);
+        assembleShareUserInfo(queryShareDetailContext);
+        return queryShareDetailContext.getVo();
+    }
+
+    /**
+     * 查询分享的简单详情
+     * 1、校验分享的状态
+     * 2、初始化分享实体
+     * 3、查询分享的主体信息
+     * 4、查询分享者的信息
+     *
+     * @param context
+     * @return
+     */
+    @Override
+    public ShareSimpleDetailVO simpleDetail(QueryShareSimpleDetailContext context) {
+        XPanShare xPanShare = checkShareStatus(context.getShareId());
+        context.setRecord(xPanShare);
+        initShareSimpleVO(context);
+        assembleMainShareSimpleInfo(context);
+        assembleShareSimpleUserInfo(context);
+        return context.getVo();
+    }
+
+    /**
+     * 获取下一级的文件列表
+     * 1、校验分享的状态
+     * 2、校验文件的ID实在分享的文件列表中
+     * 3、查询对应文件的子文件列表，返回
+     *
+     * @param queryChildFileListContext
+     * @return
+     */
+    @Override
+    public List<XPanUserFileVO> fileList(QueryChildFileListContext queryChildFileListContext) {
+        XPanShare record = checkShareStatus(queryChildFileListContext.getShareId());
+        queryChildFileListContext.setRecord(record);
+        List<XPanUserFileVO> allUserFileRecords = checkFileIdIsOnShareStatusAndGetAllShareUserFiles(
+                queryChildFileListContext.getShareId(), Lists.newArrayList(queryChildFileListContext.getParentId())
+        );
+        Map<Long, List<XPanUserFileVO>> parentIdFileListMap = allUserFileRecords
+                .stream()
+                .collect(Collectors.groupingBy(XPanUserFileVO::getParentId));
+        List<XPanUserFileVO> xPanUserFileVOS = parentIdFileListMap.get(queryChildFileListContext.getParentId());
+        if (CollectionUtils.isEmpty(xPanUserFileVOS)) {
+            return Lists.newArrayList();
+        }
+        return xPanUserFileVOS;
+    }
+
+    /**
+     * 校验文件是否处于分享状态，返回该分享的所有文件列表
+     *
+     * @param shareId
+     * @param fileIdList
+     * @return
+     */
+    private List<XPanUserFileVO> checkFileIdIsOnShareStatusAndGetAllShareUserFiles(Long shareId, ArrayList<Long> fileIdList) {
+        List<Long> shareFileIdList = getShareFileIdList(shareId);
+        if (CollectionUtils.isEmpty(shareFileIdList)) {
+            return Lists.newArrayList();
+        }
+        List<XPanUserFile> allFileRecords = xPanUserFileService.findAllFileRecordsByFiledIdlist(shareFileIdList);
+        if (CollectionUtils.isEmpty(allFileRecords)) {
+            return Lists.newArrayList();
+        }
+        allFileRecords = allFileRecords.stream()
+                .filter(Objects::nonNull)
+                .filter(record -> Objects.equals(record.getDelFlag(), DelFlagEnum.NO.getCode()))
+                .collect(Collectors.toList());
+        List<Long> allFileIdList = allFileRecords.stream().map(XPanUserFile::getFileId).collect(Collectors.toList());
+        if (allFileIdList.containsAll(fileIdList)) {
+            return xPanUserFileService.transferVOList(allFileRecords);
+        }
+        throw new XPanBusinessException(ResponseCode.SHARE_FILE_MISS);
+    }
+
+    /**
+     * 拼装简单文件分享详情的用户信息
+     *
+     * @param context
+     */
+    private void assembleShareSimpleUserInfo(QueryShareSimpleDetailContext context) {
+        XPanUser xPanUser = xPanUserService.getById(context.getRecord().getCreateUser());
+        if (Objects.isNull(xPanUser)) {
+            throw new XPanBusinessException("用户信息查询失败");
+        }
+        ShareUserInfoVO shareUserInfoVO = new ShareUserInfoVO();
+        shareUserInfoVO.setUserId(xPanUser.getUserId());
+        shareUserInfoVO.setUsername(encryptUsername(xPanUser.getUsername()));
+        context.getVo().setShareUserInfoVO(shareUserInfoVO);
+    }
+
+    /**
+     * 加密用户名称
+     *
+     * @param username
+     * @return
+     */
+    private String encryptUsername(String username) {
+        StringBuffer stringBuffer = new StringBuffer(username);
+        stringBuffer.replace(XPanConstants.TWO_INT, username.length() - XPanConstants.TWO_INT, XPanConstants.COMMON_ENCRYPT_STR);
+        return stringBuffer.toString();
+    }
+
+    /**
+     * 填充简单分享详情实体信息
+     *
+     * @param context
+     */
+    private void assembleMainShareSimpleInfo(QueryShareSimpleDetailContext context) {
+        XPanShare record = context.getRecord();
+        ShareSimpleDetailVO vo = context.getVo();
+        vo.setShareId(record.getShareId());
+        vo.setShareName(record.getShareName());
+    }
+
+    /**
+     * 初始化简单分享详情的VO对象
+     *
+     * @param context
+     */
+    private void initShareSimpleVO(QueryShareSimpleDetailContext context) {
+        ShareSimpleDetailVO shareSimpleDetailVO = new ShareSimpleDetailVO();
+        context.setVo(shareSimpleDetailVO);
+    }
+
+    /**
+     * @param queryShareDetailContext
+     */
+    private void assembleShareUserInfo(QueryShareDetailContext queryShareDetailContext) {
+        XPanUser xPanUser = xPanUserService.getById(queryShareDetailContext.getRecord().getCreateUser());
+        if (Objects.isNull(xPanUser)) {
+            throw new XPanBusinessException("用户信息查询失败");
+        }
+        ShareUserInfoVO shareUserInfoVO = new ShareUserInfoVO();
+        shareUserInfoVO.setUserId(xPanUser.getUserId());
+        shareUserInfoVO.setUsername(xPanUser.getUsername());
+        queryShareDetailContext.getVo().setShareUserInfoVO(shareUserInfoVO);
+    }
+
+    /**
+     * 查询分享对应的文件列表
+     * 1、查询分享对应的文件ID集合
+     * 2、根据文件ID来查询文件列表信息
+     *
+     * @param queryShareDetailContext
+     */
+    private void assembleShareFilesInfo(QueryShareDetailContext queryShareDetailContext) {
+        List<Long> fileIdList = getShareFileIdList(queryShareDetailContext.getShareId());
+        QueryFileListContext queryFileListContext = new QueryFileListContext();
+        queryFileListContext.setUserId(queryShareDetailContext.getRecord().getCreateUser());
+        queryFileListContext.setDelFlag(DelFlagEnum.NO.getCode());
+        queryFileListContext.setFileIdList(fileIdList);
+        List<XPanUserFileVO> xPanUserFileVOList = xPanUserFileService.getFileList(queryFileListContext);
+        queryShareDetailContext.getVo().setXPanUserFileVOList(xPanUserFileVOList);
+    }
+
+    /**
+     * 查询分享对应的文件ID集合
+     *
+     * @param shareId
+     * @return
+     */
+    private List<Long> getShareFileIdList(Long shareId) {
+        if (Objects.isNull(shareId)) {
+            return Lists.newArrayList();
+        }
+        LambdaQueryWrapper<XPanShareFile> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.select(XPanShareFile::getFileId);
+        queryWrapper.eq(XPanShareFile::getShareId, shareId);
+        return xPanShareFileService.listObjs(queryWrapper, v -> (Long) v);
+    }
+
+    /**
+     * 查询分享的主体信息
+     *
+     * @param queryShareDetailContext
+     */
+    private void assembleMainShareInfo(QueryShareDetailContext queryShareDetailContext) {
+        XPanShare record = queryShareDetailContext.getRecord();
+        ShareDetailVO vo = queryShareDetailContext.getVo();
+        vo.setShareId(record.getShareId());
+        vo.setShareName(record.getShareName());
+        vo.setCreateTime(record.getCreateTime());
+        vo.setShareDay(record.getShareDay());
+        vo.setShareEndTime(record.getShareEndTime());
+    }
+
+    /**
+     * 初始化分享实体
+     *
+     * @param queryShareDetailContext
+     */
+    private void initShareVO(QueryShareDetailContext queryShareDetailContext) {
+        ShareDetailVO shareDetailVO = new ShareDetailVO();
+        queryShareDetailContext.setVo(shareDetailVO);
+    }
+
+    /**
+     * 生成一个短期的token
+     *
+     * @param checkShareCodeContext
+     * @return
+     */
+    private String generateShareToken(CheckShareCodeContext checkShareCodeContext) {
+        XPanShare record = checkShareCodeContext.getRecord();
+        return JwtUtil.generateToken(UUIDUtil.getUUID(), ShareConstants.SHARE_ID, record.getShareId(), ShareConstants.ONE_HOUR_LONG);
+    }
+
+    /**
+     * 校验分享码
+     * 校验分享码是不是正确
+     *
+     * @param checkShareCodeContext
+     */
+    private void doCheckShareCode(CheckShareCodeContext checkShareCodeContext) {
+        if (!Objects.equals(checkShareCodeContext.getRecord().getShareCode(), checkShareCodeContext.getShareCode())) {
+            throw new XPanBusinessException("分享码错误！");
+        }
+    }
+
+    /**
+     * 校验分享状态是否正常
+     *
+     * @param shareId
+     * @return
+     */
+    private XPanShare checkShareStatus(Long shareId) {
+        XPanShare record = getById(shareId);
+        if (Objects.isNull(record)) {
+            throw new XPanBusinessException(ResponseCode.SHARE_CANCELLED);
+        }
+        if (Objects.equals(ShareStatusEnum.FILE_DELETED.getCode(), record.getShareStatus())) {
+            throw new XPanBusinessException(ResponseCode.SHARE_FILE_MISS);
+        }
+        if (Objects.equals(ShareDayTypeEnum.PERMANENT_VALIDITY.getCode(), record.getShareDayType())) {
+            return record;
+        }
+        if (record.getShareEndTime().before(new Date())) {
+            throw new XPanBusinessException(ResponseCode.SHARE_EXPIRE);
+        }
+        return record;
+    }
+
+    /**
      * 取消文件和分享的关联关系数据
      *
      * @param cancelShareContext
      */
     private void doCancelShareFiles(CancelShareContext cancelShareContext) {
         LambdaQueryWrapper<XPanShareFile> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.in(XPanShareFile::getShareId,cancelShareContext.getShareIdList());
-        queryWrapper.eq(XPanShareFile::getCreateUser,cancelShareContext.getUserId());
+        queryWrapper.in(XPanShareFile::getShareId, cancelShareContext.getShareIdList());
+        queryWrapper.eq(XPanShareFile::getCreateUser, cancelShareContext.getUserId());
         if (!xPanShareFileService.remove(queryWrapper)) {
             throw new XPanBusinessException("取消分享失败");
         }
@@ -220,7 +511,7 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
         if (sharePrefix.lastIndexOf(XPanConstants.SLASH_STR) == XPanConstants.MINUS_ONE_INT) {
             sharePrefix += XPanConstants.SLASH_STR;
         }
-        return sharePrefix;
+        return sharePrefix + IdUtil.encrypt(shareId);
     }
 }
 

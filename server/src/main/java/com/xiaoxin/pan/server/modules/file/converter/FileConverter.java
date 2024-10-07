@@ -4,6 +4,7 @@ import com.xiaoxin.pan.server.modules.file.context.*;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.po.*;
 import com.xiaoxin.pan.server.modules.file.vo.FolderTreeNodeVO;
+import com.xiaoxin.pan.server.modules.file.vo.XPanUserFileVO;
 import com.xiaoxin.pan.storge.engine.core.context.StoreFileChunkContext;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -56,4 +57,6 @@ public interface FileConverter {
     @Mapping(target = "id", source = "record.fileId")
     @Mapping(target = "children", expression = "java(com.google.common.collect.Lists.newArrayList())")
     FolderTreeNodeVO xPanUserFile2FolderTreeNodeVO(XPanUserFile record);
+
+    XPanUserFileVO xPanUserFile2RPanUserFileVO(XPanUserFile record);
 }
