@@ -14,6 +14,7 @@ import com.xiaoxin.pan.core.utils.JwtUtil;
 import com.xiaoxin.pan.core.utils.UUIDUtil;
 import com.xiaoxin.pan.server.common.config.PanServerConfig;
 import com.xiaoxin.pan.server.modules.file.context.CopyFileContext;
+import com.xiaoxin.pan.server.modules.file.context.FileDownloadContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
@@ -201,6 +202,32 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
         checkShareStatus(context.getShareId());
         checkFileIdIsOnShareStatus(context.getShareId(), context.getFileIdList());
         doSave(context);
+    }
+
+    /**
+     * 分享的文件下载
+     * 1、校验分享状态
+     * 2、校验文件ID的合法性
+     * 3、执行文件下载的动作
+     * @param shareFileDownloadContext
+     */
+    @Override
+    public void download(ShareFileDownloadContext shareFileDownloadContext) {
+        checkShareStatus(shareFileDownloadContext.getShareId());
+        checkFileIdIsOnShareStatus(shareFileDownloadContext.getShareId(),Lists.newArrayList(shareFileDownloadContext.getFileId()));
+        doDownload(shareFileDownloadContext);
+    }
+
+    /**
+     * 执行文件下载操作
+     * @param shareFileDownloadContext
+     */
+    private void doDownload(ShareFileDownloadContext shareFileDownloadContext) {
+        FileDownloadContext fileDownloadContext = new FileDownloadContext();
+        fileDownloadContext.setFileId(shareFileDownloadContext.getFileId());
+        fileDownloadContext.setUserId(shareFileDownloadContext.getUserId());
+        fileDownloadContext.setResponse(shareFileDownloadContext.getResponse());
+        xPanUserFileService.download(fileDownloadContext);
     }
 
     /**

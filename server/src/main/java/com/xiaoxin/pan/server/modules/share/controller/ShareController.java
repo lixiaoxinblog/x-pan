@@ -26,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -197,7 +198,25 @@ public class ShareController {
         return R.success();
     }
 
-
-
+    /**
+     * 文件分享下载
+     */
+    @ApiOperation(
+            value = "分享文件下载",
+            notes = "该接口提供了分享文件下载的功能",
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @GetMapping("/file/download")
+    @NeedShareCode
+    public void download(@NotBlank(message = "文件ID不能为空") @RequestParam(value = "fileId", required = false) String fileId,
+                         HttpServletResponse response) {
+        ShareFileDownloadContext shareFileDownloadContext = new ShareFileDownloadContext();
+        shareFileDownloadContext.setFileId(IdUtil.decrypt(fileId));
+        shareFileDownloadContext.setShareId(ShareIdUtil.get());
+        shareFileDownloadContext.setUserId(UserIdUtil.get());
+        shareFileDownloadContext.setResponse(response);
+        xPanShareService.download(shareFileDownloadContext);
+    }
 
 }

@@ -75,4 +75,10 @@ public interface XPanShareService extends IService<XPanShare> {
      * @param context
      */
     void saveFiles(ShareSaveContext context);
+
+    /**
+     * 文件分享下载功能
+     * @param shareFileDownloadContext
+     */
+    void download(ShareFileDownloadContext shareFileDownloadContext);
 }

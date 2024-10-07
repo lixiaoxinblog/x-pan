@@ -50,7 +50,6 @@ public class FileTest {
         QueryUploadedChunksContext context = new QueryUploadedChunksContext();
         context.setIdentifier(identifier);
         context.setUserId(userId);
-
         UploadedChunksVO vo = iUserFileService.getUploadedChunks(context);
         Assert.notNull(vo);
         Assert.notEmpty(vo.getUploadedChunks());
@@ -69,7 +68,7 @@ public class FileTest {
     }
 
 
-    private final static String USERNAME = "xiaoxin";
+    private final static String USERNAME = "xiaoxin11111";
     private final static String PASSWORD = "123456789";
     private final static String QUESTION = "question";
     private final static String ANSWER = "answer";
@@ -86,6 +85,20 @@ public class FileTest {
         context.setQuestion(QUESTION);
         context.setAnswer(ANSWER);
         return context;
+    }
+
+    /**
+     * 测试加解密
+     */
+    @Test
+    public void testEncryptAndDecrypt() {
+        Long content = 1837412993414815744L;
+        String encrypt = IdUtil.encrypt(1837412993414815744L);
+        System.out.println(encrypt);
+        Long decrypt = IdUtil.decrypt(encrypt);
+        System.out.println(decrypt);
+
+        Assert.isTrue(content.equals(decrypt));
     }
 
 

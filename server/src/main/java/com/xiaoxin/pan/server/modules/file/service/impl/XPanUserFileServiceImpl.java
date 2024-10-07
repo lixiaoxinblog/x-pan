@@ -901,9 +901,10 @@ public class XPanUserFileServiceImpl extends ServiceImpl<XPanUserFileMapper, XPa
         if (Objects.isNull(xPanUserFile)) {
             throw new XPanBusinessException("该文件不存在");
         }
-        if (!xPanUserFile.getUserId().equals(userId)) {
-            throw new XPanBusinessException("您没有该文件权限！");
-        }
+        //todo
+//        if (!xPanUserFile.getUserId().equals(userId)) {
+//            throw new XPanBusinessException("您没有该文件权限！");
+//        }
 
     }
 
