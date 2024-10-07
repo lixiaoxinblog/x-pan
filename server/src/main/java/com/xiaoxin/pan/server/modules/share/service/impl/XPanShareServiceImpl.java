@@ -13,6 +13,7 @@ import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.core.utils.JwtUtil;
 import com.xiaoxin.pan.core.utils.UUIDUtil;
 import com.xiaoxin.pan.server.common.config.PanServerConfig;
+import com.xiaoxin.pan.server.modules.file.context.CopyFileContext;
 import com.xiaoxin.pan.server.modules.file.context.QueryFileListContext;
 import com.xiaoxin.pan.server.modules.file.entity.XPanUserFile;
 import com.xiaoxin.pan.server.modules.file.enums.DelFlagEnum;
@@ -188,13 +189,51 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
     }
 
     /**
+     * 保存分享的文件
+     * 1、校验分享状态
+     * 2、校验文件ID是否合法
+     * 3、执行保存我的网盘动作
+     *
+     * @param context
+     */
+    @Override
+    public void saveFiles(ShareSaveContext context) {
+        checkShareStatus(context.getShareId());
+        checkFileIdIsOnShareStatus(context.getShareId(), context.getFileIdList());
+        doSave(context);
+    }
+
+    /**
+     * 执行保存动作
+     * 委托文件模块做文件拷贝的操作
+     * @param context
+     */
+    private void doSave(ShareSaveContext context) {
+        CopyFileContext copyFileContext = new CopyFileContext();
+        copyFileContext.setFileIdList(context.getFileIdList());
+        copyFileContext.setTargetParentId(context.getTargetParentId());
+        copyFileContext.setUserId(context.getUserId());
+        xPanUserFileService.copy(copyFileContext);
+    }
+
+    /**
+     * 校验文件ID是否属于某一个分享
+     *
+     * @param shareId
+     * @param fileIdList
+     */
+    private void checkFileIdIsOnShareStatus(Long shareId, List<Long> fileIdList) {
+        checkFileIdIsOnShareStatusAndGetAllShareUserFiles(shareId, fileIdList);
+    }
+
+    /**
      * 校验文件是否处于分享状态，返回该分享的所有文件列表
      *
      * @param shareId
      * @param fileIdList
      * @return
      */
-    private List<XPanUserFileVO> checkFileIdIsOnShareStatusAndGetAllShareUserFiles(Long shareId, ArrayList<Long> fileIdList) {
+    private List<XPanUserFileVO> checkFileIdIsOnShareStatusAndGetAllShareUserFiles(Long shareId, List<Long> fileIdList) {
         List<Long> shareFileIdList = getShareFileIdList(shareId);
         if (CollectionUtils.isEmpty(shareFileIdList)) {
             return Lists.newArrayList();

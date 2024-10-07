@@ -69,4 +69,10 @@ public interface XPanShareService extends IService<XPanShare> {
      * @return
      */
     List<XPanUserFileVO> fileList(QueryChildFileListContext queryChildFileListContext);
+
+    /**
+     * 保存文件保存到我的网盘
+     * @param context
+     */
+    void saveFiles(ShareSaveContext context);
 }

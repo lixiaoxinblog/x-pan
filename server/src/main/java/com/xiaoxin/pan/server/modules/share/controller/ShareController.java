@@ -14,6 +14,7 @@ import com.xiaoxin.pan.server.modules.share.converter.ShareConverter;
 import com.xiaoxin.pan.server.modules.share.po.CancelSharePO;
 import com.xiaoxin.pan.server.modules.share.po.CheckShareCodePO;
 import com.xiaoxin.pan.server.modules.share.po.CreateShareUrlPO;
+import com.xiaoxin.pan.server.modules.share.po.ShareSavePO;
 import com.xiaoxin.pan.server.modules.share.service.XPanShareService;
 import com.xiaoxin.pan.server.modules.share.vo.ShareDetailVO;
 import com.xiaoxin.pan.server.modules.share.vo.ShareSimpleDetailVO;
@@ -164,6 +165,39 @@ public class ShareController {
         List<XPanUserFileVO> result = xPanShareService.fileList(queryChildFileListContext);
         return R.data(result);
     }
+
+    /**
+     * 保存至我的网盘
+     */
+    @ApiOperation(
+            value = "保存至我的网盘",
+            notes = "该接口提供了保存至我的网盘的功能",
+            consumes = MediaType.APPLICATION_JSON_UTF8_VALUE,
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    @NeedShareCode
+    @PostMapping("/save")
+    public R saveFiles(@Validated @RequestBody ShareSavePO shareSavePO) {
+        ShareSaveContext context = new ShareSaveContext();
+
+        String fileIds = shareSavePO.getFileIds();
+        List<Long> fileIdList = Splitter
+                .on(XPanConstants.COMMON_SEPARATOR)
+                .splitToList(fileIds)
+                .stream()
+                .map(IdUtil::decrypt)
+                .collect(Collectors.toList());
+        context.setFileIdList(fileIdList);
+
+        context.setTargetParentId(IdUtil.decrypt(shareSavePO.getTargetParentId()));
+        context.setUserId(UserIdUtil.get());
+        context.setShareId(ShareIdUtil.get());
+
+        xPanShareService.saveFiles(context);
+        return R.success();
+    }
+
+
 
 
 }
