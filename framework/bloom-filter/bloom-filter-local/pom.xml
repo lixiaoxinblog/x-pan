@@ -5,12 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.xiaoxin</groupId>
-        <artifactId>framework</artifactId>
+        <artifactId>bloom-filter</artifactId>
         <version>1.0</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>storage-engine-core</artifactId>
+    <artifactId>bloom-filter-local</artifactId>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -21,13 +20,14 @@
     <dependencies>
         <dependency>
             <groupId>com.xiaoxin</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>bloom-filter-core</artifactId>
             <version>1.0</version>
         </dependency>
+
         <dependency>
-            <groupId>com.xiaoxin</groupId>
-            <artifactId>cahce-core</artifactId>
-            <version>1.0</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

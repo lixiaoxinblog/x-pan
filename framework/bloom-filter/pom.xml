@@ -7,10 +7,14 @@
         <groupId>com.xiaoxin</groupId>
         <artifactId>framework</artifactId>
         <version>1.0</version>
-        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>storage-engine-core</artifactId>
+    <artifactId>bloom-filter</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>bloom-filter-core</module>
+        <module>bloom-filter-local</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -22,11 +26,6 @@
         <dependency>
             <groupId>com.xiaoxin</groupId>
             <artifactId>core</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xiaoxin</groupId>
-            <artifactId>cahce-core</artifactId>
             <version>1.0</version>
         </dependency>
     </dependencies>
