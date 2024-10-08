@@ -25,6 +25,13 @@
         create_user,create_time
     </sql>
 
+    <select id="rollingQueryShareId" resultType="java.lang.Long">
+        SELECT share_id from x_pan_share
+        WHERE share_id > #{startId}
+        ORDER BY share_id
+        LIMIT #{limit}
+    </select>
+
     <select id="selectShareVOListByUserId" resultType="com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlListVO">
         SELECT share_id       AS shareId,
                share_name     AS shareName,

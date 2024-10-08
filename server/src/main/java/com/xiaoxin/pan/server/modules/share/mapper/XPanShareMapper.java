@@ -4,6 +4,7 @@ import com.xiaoxin.pan.server.modules.share.entity.XPanShare;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xiaoxin.pan.server.modules.share.vo.XPanShareUrlListVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -24,6 +25,14 @@ public interface XPanShareMapper extends BaseMapper<XPanShare> {
      * @return
      */
     List<XPanShareUrlListVO> selectShareVOListByUserId(Long userId);
+
+    /**
+     * 滚动查询分享id
+     * @param startId
+     * @param limit
+     * @return
+     */
+    List<Long> rollingQueryShareId(@Param("startId") long startId, @Param("limit") long limit);
 }
 
 

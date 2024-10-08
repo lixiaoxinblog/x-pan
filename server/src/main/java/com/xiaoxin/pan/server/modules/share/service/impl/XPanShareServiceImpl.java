@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.common.collect.Lists;
+import com.xiaoxin.pan.bloom.filter.BloomFilter;
+import com.xiaoxin.pan.bloom.filter.BloomFilterManager;
 import com.xiaoxin.pan.core.constants.XPanConstants;
 import com.xiaoxin.pan.core.exception.XPanBusinessException;
 import com.xiaoxin.pan.core.response.ResponseCode;
@@ -35,6 +37,7 @@ import com.xiaoxin.pan.server.modules.share.mapper.XPanShareMapper;
 import com.xiaoxin.pan.server.modules.share.vo.*;
 import com.xiaoxin.pan.server.modules.user.entity.XPanUser;
 import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +55,7 @@ import java.util.stream.Collectors;
  * @createDate 2024-07-26 12:50:31
  */
 @Service
+@Slf4j
 public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare>
         implements XPanShareService {
     @Autowired
@@ -66,6 +70,11 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
     @Autowired
     @Qualifier("shareManualCacheService")
     private ManualCacheService<XPanShare> manualCacheService;
+
+    @Autowired
+    private BloomFilterManager manager;
+
+    private static final String BLOOM_FILTER_NAME = "SHARE_SIMPLE_DETAIL";
     /**
      * 创建分享链接
      * 拼装分享实体，保存到数据库
@@ -80,7 +89,22 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
     public XPanShareUrlVO create(CreateShareUrlContext shareUrlPO2CreateShareUrlContext) {
         saveShare(shareUrlPO2CreateShareUrlContext);
         saveShareFiles(shareUrlPO2CreateShareUrlContext);
-        return assembleShareVO(shareUrlPO2CreateShareUrlContext);
+        XPanShareUrlVO xPanShareUrlVO = assembleShareVO(shareUrlPO2CreateShareUrlContext);
+        afterCreate(shareUrlPO2CreateShareUrlContext);
+        return xPanShareUrlVO;
+    }
+
+    /**
+     * 创建分享链接之后 添加进布隆过滤器
+     * @param shareUrlPO2CreateShareUrlContext
+     */
+    private void afterCreate(CreateShareUrlContext shareUrlPO2CreateShareUrlContext) {
+        BloomFilter bloomFilter = manager.getBloomFilter(BLOOM_FILTER_NAME);
+        if (Objects.nonNull(bloomFilter)){
+            Long shareId = shareUrlPO2CreateShareUrlContext.getRecord().getShareId();
+            bloomFilter.put(shareId);
+            log.info("create share , add share is to bloom filter ,share id {}",shareId);
+        }
     }
 
     /**
@@ -223,6 +247,18 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
         checkShareStatus(shareFileDownloadContext.getShareId());
         checkFileIdIsOnShareStatus(shareFileDownloadContext.getShareId(),Lists.newArrayList(shareFileDownloadContext.getFileId()));
         doDownload(shareFileDownloadContext);
+    }
+
+    /**
+     * 滚动查询分享ID
+     *
+     * @param startId
+     * @param limit
+     * @return
+     */
+    @Override
+    public List<Long> rollingQueryShareId(long startId, long limit) {
+        return baseMapper.rollingQueryShareId(startId, limit);
     }
 
     /**

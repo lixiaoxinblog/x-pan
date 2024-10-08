@@ -52,3 +52,11 @@ com:
             root-file-chunk-path: F:\xpan\chunk
       server:
         share-prefix: http://127.0.0.1:5173/share/
+      bloom:
+        filter:
+          local:
+            items:
+              - name: SHARE_SIMPLE_DETAIL
+                funnel-type-name: LONG
+                expected-insertions: 1000000
+                fpp: 0.01

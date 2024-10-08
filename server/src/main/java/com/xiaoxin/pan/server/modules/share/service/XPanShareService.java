@@ -81,4 +81,12 @@ public interface XPanShareService extends IService<XPanShare> {
      * @param shareFileDownloadContext
      */
     void download(ShareFileDownloadContext shareFileDownloadContext);
+
+    /**
+     * 滚动查询分享ID
+     * @param startId
+     * @param limit
+     * @return
+     */
+    List<Long> rollingQueryShareId(long startId, long limit);
 }
