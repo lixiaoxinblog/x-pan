@@ -12,6 +12,8 @@ import com.xiaoxin.pan.core.response.ResponseCode;
 import com.xiaoxin.pan.core.utils.IdUtil;
 import com.xiaoxin.pan.core.utils.JwtUtil;
 import com.xiaoxin.pan.core.utils.UUIDUtil;
+import com.xiaoxin.pan.server.common.cache.AbstractManualCacheService;
+import com.xiaoxin.pan.server.common.cache.ManualCacheService;
 import com.xiaoxin.pan.server.common.config.PanServerConfig;
 import com.xiaoxin.pan.server.modules.file.context.CopyFileContext;
 import com.xiaoxin.pan.server.modules.file.context.FileDownloadContext;
@@ -36,9 +38,11 @@ import com.xiaoxin.pan.server.modules.user.service.XPanUserService;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -59,6 +63,9 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
     @Autowired
     private XPanUserService xPanUserService;
 
+    @Autowired
+    @Qualifier("shareManualCacheService")
+    private ManualCacheService<XPanShare> manualCacheService;
     /**
      * 创建分享链接
      * 拼装分享实体，保存到数据库
@@ -578,6 +585,43 @@ public class XPanShareServiceImpl extends ServiceImpl<XPanShareMapper, XPanShare
             sharePrefix += XPanConstants.SLASH_STR;
         }
         return sharePrefix + IdUtil.encrypt(shareId);
+    }
+
+    @Override
+    public boolean updateById(XPanShare entity) {
+//        return super.updateById(entity);
+        return manualCacheService.updateById(entity.getShareId(), entity);
+    }
+
+    @Override
+    public boolean updateBatchById(Collection<XPanShare> entityList) {
+//        return super.updateBatchById(entityList);
+        Map<Long, XPanShare> collect = entityList.stream().collect(Collectors.toMap(XPanShare::getShareId, v -> v));
+        return manualCacheService.updateByIds(collect);
+    }
+
+    @Override
+    public boolean removeByIds(Collection<? extends Serializable> idList) {
+//        return super.removeByIds(idList);
+        return manualCacheService.removeByIds(idList);
+    }
+
+    @Override
+    public boolean removeById(Serializable id) {
+//        return super.removeById(id);
+        return manualCacheService.removeById(id);
+    }
+
+    @Override
+    public XPanShare getById(Serializable id) {
+//        return super.getById(id);
+        return manualCacheService.getById(id);
+    }
+
+    @Override
+    public List<XPanShare> listByIds(Collection<? extends Serializable> idList) {
+//        return super.listByIds(idList);
+        return manualCacheService.getByIds(idList);
     }
 }
 

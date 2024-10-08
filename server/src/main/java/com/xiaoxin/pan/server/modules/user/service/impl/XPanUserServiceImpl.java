@@ -234,8 +234,10 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
         entity.setUserId(IdUtil.get());
         entity.setSalt(salt);
         entity.setPassword(dbPassword);
-        entity.setCreateTime(LocalDate.now());
-        entity.setUpdateTime(LocalDate.now());
+//        entity.setCreateTime(LocalDate.now());
+        entity.setCreateTime(new Date());
+//        entity.setUpdateTime(LocalDate.now());
+        entity.setUpdateTime(new Date());
         userRegisterContext.setEntity(entity);
     }
 
@@ -306,7 +308,8 @@ public class XPanUserServiceImpl extends ServiceImpl<XPanUserMapper, XPanUser>
 
         String newDbPassword = PasswordUtil.encryptPassword(entity.getSalt(), password);
         entity.setPassword(newDbPassword);
-        entity.setUpdateTime(LocalDate.now());
+//        entity.setUpdateTime(LocalDate.now());
+        entity.setUpdateTime(new Date());
 
         if (!updateById(entity)) {
             throw new XPanBusinessException("重置用户密码失败");

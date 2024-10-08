@@ -184,6 +184,9 @@ public abstract class AbstractManualCacheService<V> implements ManualCacheServic
             return null;
         }
         Cache.ValueWrapper valueWrapper = cache.get(key);
+        if (Objects.isNull(valueWrapper)){
+            return null;
+        }
         return (V) valueWrapper.get();
     }
 

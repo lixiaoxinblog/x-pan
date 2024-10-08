@@ -8,7 +8,6 @@ import java.io.Serializable;
 import java.util.List;
 
 @Data
-@AllArgsConstructor
 public class CreateShareUrlContext implements Serializable {
     private static final long serialVersionUID = 3426184950133039282L;
     /**

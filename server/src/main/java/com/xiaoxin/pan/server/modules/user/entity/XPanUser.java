@@ -56,13 +56,15 @@ public class XPanUser implements Serializable {
      * 创建时间
      */
     @TableField(value = "create_time")
-    private LocalDate createTime;
+//    private LocalDate createTime;
+    private Date createTime;
 
     /**
      * 更新时间
      */
     @TableField(value = "update_time")
-    private LocalDate updateTime;
+//    private LocalDate updateTime;
+    private Date updateTime;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
