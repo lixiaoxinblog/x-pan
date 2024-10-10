@@ -118,7 +118,7 @@ public class SpElUtil {
      */
     @Data
     @AllArgsConstructor
-    private static class RPanExpressionRootObject {
+    private static class XPanExpressionRootObject {
 
         /**
          * 切点方法所属类名称
@@ -186,7 +186,7 @@ public class SpElUtil {
                                                           Class[] parameterTypes,
                                                           Object target) {
             Method targetMethod = getTargetMethod(classType, method);
-            RPanExpressionRootObject root = new RPanExpressionRootObject(className, methodName, classType, method, args, parameterTypes, target);
+            XPanExpressionRootObject root = new XPanExpressionRootObject(className, methodName, classType, method, args, parameterTypes, target);
             return new MethodBasedEvaluationContext(root, targetMethod, args, this.paramNameDiscoverer);
         }
 
